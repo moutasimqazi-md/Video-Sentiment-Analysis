@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Account — NeuroLens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="../assets/img/favicon-48.png">
+<link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<meta name="theme-color" content="#fcfaf8">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/pages.css">
+<link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body data-root="../" data-active="account" data-shell="app" data-nav="account">
+<a class="skip" href="#main">Skip to content</a>
+<div id="site-header"></div>
+
+<main class="container page" id="main" tabindex="-1">
+  <div class="page-head"><h1>Account &amp; billing</h1></div>
+  <div class="split" id="acct">
+    <section class="card">
+      <h2 class="h3">Profile</h2>
+      <div class="sum-row"><span class="muted">Name</span><b id="uName"></b></div>
+      <div class="sum-row"><span class="muted">Email</span><b id="uEmail"></b></div>
+      <div class="sum-row"><span class="muted">Member since</span><b id="uSince"></b></div>
+      <button class="btn" style="margin-top:14px" id="logout">Log out</button>
+    </section>
+    <section class="card">
+      <h2 class="h3">Subscription</h2>
+      <div class="sum-row"><span class="muted">Current plan</span><b id="pName"></b></div>
+      <div class="sum-row"><span class="muted">Billing</span><b id="pBill"></b></div>
+      <div class="quota" style="margin:12px 0 0"><span>Usage this month</span><b id="pUse"></b></div>
+      <div class="progress meter"><i id="pBar"></i></div>
+      <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">
+        <a class="btn primary" href="pricing.html">Change plan</a>
+        <button class="btn" id="cancel">Cancel subscription</button>
+      </div>
+    </section>
+  </div>
+  <div id="needLogin" class="empty" hidden><div class="e-ico"><i data-icon="lock" data-size="32"></i></div><h2>Log in to view your account</h2><p style="margin:8px 0 18px">Your plan and usage live here.</p><a class="btn primary" href="login.html">Log in</a></div>
+</main>
+
+<div id="site-footer"></div>
+<script src="../js/core/moods.js"></script>
+<script src="../js/core/store.js"></script>
+<script src="../js/core/icons.js"></script>
+<script src="../js/core/layout.js"></script>
+<script src="../js/pages/account.js"></script>
+</body>
+</html>

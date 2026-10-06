@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fb0ff"/><stop offset=".55" stop-color="#ffc3b5"/><stop offset="1" stop-color="#ffe3cf"/>
+    </linearGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb08e"/><stop offset="1" stop-color="#f4685f"/></linearGradient>
+  </defs>
+  <rect width="400" height="300" fill="url(#sky)"/>
+  <circle cx="270" cy="150" r="46" fill="url(#sun)"/>
+  <ellipse cx="90" cy="70" rx="46" ry="12" fill="#fff" opacity=".75"/><ellipse cx="125" cy="62" rx="30" ry="10" fill="#fff" opacity=".75"/>
+  <ellipse cx="330" cy="55" rx="34" ry="9" fill="#fff" opacity=".6"/>
+  <path d="M0 210 L90 140 L170 205 L250 150 L330 200 L400 160 V300 H0Z" fill="#6f8bd8" opacity=".55"/>
+  <path d="M0 240 Q100 190 200 235 T400 220 V300 H0Z" fill="#4a6fc4"/>
+  <path d="M0 265 Q120 235 230 262 T400 250 V300 H0Z" fill="#2f4f9e"/>
+  <path d="M60 300 V262 M60 262 l-14 -22 M60 262 l14 -22 M60 240 l-9 -22 M60 240 l9 -22" stroke="#223a7a" stroke-width="5" stroke-linecap="round" fill="none"/>
+</svg>

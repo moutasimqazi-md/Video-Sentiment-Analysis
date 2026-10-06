@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Login — NeuroLens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="../assets/img/favicon-48.png">
+<link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<meta name="theme-color" content="#fcfaf8">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/pages.css">
+</head>
+<body data-root="../" data-active="login">
+<a class="skip" href="#main">Skip to content</a>
+<div id="site-header"></div>
+
+<main class="container page" id="main" tabindex="-1">
+  <div class="card auth-card">
+    <h1 id="authTitle" class="auth-h">Welcome back</h1>
+    <p class="muted" id="authSub" style="margin:6px 0 20px">Log in to save your analyses and manage your plan.</p>
+    <div class="field" id="nameField" hidden><label for="aName">Name</label><input class="input" id="aName" autocomplete="name"></div>
+    <div class="field"><label for="aEmail">Email</label><input class="input" id="aEmail" type="email" autocomplete="email"></div>
+    <div class="field"><label for="aPass">Password</label><input class="input" id="aPass" type="password" autocomplete="current-password"></div>
+    <div id="authErr" role="alert" class="notice err" hidden style="margin-bottom:12px"></div>
+    <button class="btn primary full lg" id="authBtn">Log in</button>
+    <p class="muted" style="font-size:13px;text-align:center;margin-top:16px"><span id="swapText">New here?</span> <button class="link" id="swapBtn">Create an account</button></p>
+    <p class="muted" style="font-size:12px;text-align:center;margin-top:10px">Demo sign-in: your details stay in this browser only and no password is stored.</p>
+  </div>
+</main>
+
+<div id="site-footer"></div>
+<script src="../js/core/moods.js"></script>
+<script src="../js/core/store.js"></script>
+<script src="../js/core/icons.js"></script>
+<script src="../js/core/layout.js"></script>
+<script src="../js/pages/login.js"></script>
+</body>
+</html>

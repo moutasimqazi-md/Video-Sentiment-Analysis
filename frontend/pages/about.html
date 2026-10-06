@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>About — NeuroLens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="../assets/img/favicon-48.png">
+<link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<meta name="theme-color" content="#fcfaf8">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/pages.css">
+</head>
+<body data-root="../" data-active="about">
+<a class="skip" href="#main">Skip to content</a>
+<div id="site-header"></div>
+
+<main class="container page" id="main" tabindex="-1">
+  <div class="about-hero">
+    <div>
+      <span class="badge coral">Our story</span>
+      <h1 style="font-size:clamp(30px,4.4vw,44px);margin:14px 0">Built for <span class="hl">curious</span> creators.</h1>
+      <p class="muted" style="font-size:17px">Every view carries a feeling. NeuroLens makes that feeling visible, so you can make content that lands the way you intend.</p>
+      <div style="margin-top:22px"><a class="btn primary lg" href="analyze.html">Start analyzing</a></div>
+    </div>
+    <div class="about-visual"><div class="pipeline">
+      <div><span class="pi"><i data-icon="film" data-size="20"></i></span>Frames sampled across the whole video</div>
+      <div><span class="pi"><i data-icon="brain" data-size="20"></i></span>Every frame is scored against 16 emotions</div>
+      <div><span class="pi"><i data-icon="mic" data-size="20"></i></span>The soundtrack is scored in short clips</div>
+      <div><span class="pi"><i data-icon="gauge" data-size="20"></i></span>60% visual + 40% audio gives the final vibe</div>
+    </div></div>
+  </div>
+
+  <section class="section">
+    <div class="section-head"><h2>What we believe</h2></div>
+    <div class="grid c3">
+      <article class="card"><div class="card-icon"><i data-icon="shield" data-size="22"></i></div><h3>Privacy first</h3><p>Videos are deleted the moment analysis finishes. We keep scores, not footage.</p></article>
+      <article class="card"><div class="card-icon blue"><i data-icon="eye" data-size="22"></i></div><h3>Honest about uncertainty</h3><p>Emotion AI is a guide. We show full breakdowns, not just one confident label.</p></article>
+      <article class="card"><div class="card-icon green"><i data-icon="trend" data-size="22"></i></div><h3>Always improving</h3><p>Your good/bad feedback helps tune results over time.</p></article>
+    </div>
+  </section>
+</main>
+
+<div id="site-footer"></div>
+<script src="../js/core/moods.js"></script>
+<script src="../js/core/store.js"></script>
+<script src="../js/core/icons.js"></script>
+<script src="../js/core/layout.js"></script>
+</body>
+</html>

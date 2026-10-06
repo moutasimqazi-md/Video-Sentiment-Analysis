@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Family — NeuroLens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="../assets/img/favicon-48.png">
+<link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<meta name="theme-color" content="#fcfaf8">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/pages.css">
+<link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body data-root="../" data-active="family" data-shell="app" data-nav="family">
+<a class="skip" href="#main">Skip to content</a>
+<div id="site-header"></div>
+
+<main class="container page" id="main" tabindex="-1">
+  <div class="page-head">
+    <span class="badge green"><i data-icon="users" data-size="14"></i>For parents</span>
+    <h1 style="margin-top:12px">Family monitoring</h1>
+    <p>Check the emotional tone of the Reels your child watches and get a heads-up when something looks heavy. It works best as a conversation starter, so we recommend being open with your child about it.</p>
+  </div>
+
+  <div id="alerts"></div>
+
+  <div class="grid c2" style="align-items:start">
+    <section>
+      <div class="card-head"><h2 class="h3">Child profiles</h2><span class="muted" id="seatText" style="font-size:13px"></span></div>
+      <div class="grid" id="kids"></div>
+    </section>
+
+    <section class="grid" style="gap:18px">
+      <div class="card" id="addCard">
+        <h2 class="h3">Add a child profile</h2>
+        <div class="field" style="margin-top:12px"><label for="kName">Name or nickname</label><input class="input" id="kName"></div>
+        <div class="field"><label for="kAge">Age</label><input class="input" id="kAge" type="number" min="5" max="18"></div>
+        <label style="display:flex;gap:8px;font-size:13px;margin:4px 0 14px"><input type="checkbox" id="kConsent"> I'll be open with my child about using this and review Reels together.</label>
+        <div id="kErr" role="alert" class="notice err" hidden style="margin-bottom:10px"></div>
+        <button class="btn primary full" id="kAdd">Add profile</button>
+      </div>
+      <div class="card">
+        <h2 class="h3">How to check what they watch</h2>
+        <ul class="side-list">
+          <li><span class="n">1</span><span>Open the Reel on their phone → Share → Copy link, then paste it under their profile.</span></li>
+          <li><span class="n">2</span><span>For private accounts, screen-record the Reel and upload the recording.</span></li>
+          <li><span class="n">3</span><span>Open the weekly report to see patterns and what to talk about.</span></li>
+        </ul>
+        <p class="muted" style="font-size:12px;margin-top:12px">NeuroLens can't read their Instagram account or watch history on its own. It analyzes the Reels you give it.</p>
+      </div>
+      <div class="card"><h2 class="h3">Talking it through</h2><ul id="tips" class="tips"></ul></div>
+    </section>
+  </div>
+</main>
+
+<div id="site-footer"></div>
+<script src="../js/core/moods.js"></script>
+<script src="../js/core/store.js"></script>
+<script src="../js/core/wellbeing.js"></script>
+<script src="../js/core/imports/store.js"></script>
+<script src="../js/core/icons.js"></script>
+<script src="../js/core/layout.js"></script>
+<script src="../js/pages/family.js"></script>
+</body>
+</html>

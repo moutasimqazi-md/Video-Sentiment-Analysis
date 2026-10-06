@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Checkout — NeuroLens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="../assets/img/favicon-48.png">
+<link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<meta name="theme-color" content="#fcfaf8">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/pages.css">
+</head>
+<body data-root="../" data-active="pricing">
+<a class="skip" href="#main">Skip to content</a>
+<div id="site-header"></div>
+
+<main class="container page" id="main" tabindex="-1">
+  <a class="back no-print" data-back data-back-skip="login,account" href="pricing.html" data-back-label="Back to plans"><i data-icon="back" data-size="16"></i><span class="back-label">Back to plans</span></a>
+  <div class="page-head"><h1>Confirm your plan</h1></div>
+  <div class="split">
+    <section class="card">
+      <h2 class="h3">Your details</h2>
+      <div class="field" style="margin-top:14px"><label for="cName">Full name</label><input class="input" id="cName" autocomplete="name"></div>
+      <div class="field"><label for="cEmail">Email</label><input class="input" id="cEmail" type="email" autocomplete="email"></div>
+      <div class="notice warn" style="margin:6px 0 16px"><div><b>Demo checkout.</b> No payment is taken and no card details are collected. A payment provider such as Stripe Checkout would be connected here.</div></div>
+      <div id="chkErr" role="alert" class="notice err" hidden style="margin-bottom:12px"></div>
+      <button class="btn primary full lg" id="payBtn">Activate plan</button>
+    </section>
+    <aside class="card" id="summary"></aside>
+  </div>
+</main>
+
+<div id="site-footer"></div>
+<script src="../js/core/moods.js"></script>
+<script src="../js/core/store.js"></script>
+<script src="../js/core/icons.js"></script>
+<script src="../js/core/layout.js"></script>
+<script src="../js/pages/checkout.js"></script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard — NeuroLens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="../assets/img/favicon-48.png">
+<link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<meta name="theme-color" content="#fcfaf8">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/pages.css">
+<link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body data-root="../" data-active="dashboard" data-shell="app" data-nav="overview">
+<a class="skip" href="#main">Skip to content</a>
+<div id="site-header"></div>
+
+<main class="dash-main" id="main" tabindex="-1">
+    <header class="dash-head">
+      <div>
+        <p class="muted" id="greeting" style="font-size:14px"></p>
+        <h1 id="dashTitle">Your dashboard</h1>
+      </div>
+      <div class="dash-tools no-print">
+        <div class="chips" id="periodChips" role="group" aria-label="Time period">
+          <button class="chip" data-days="7">7 days</button>
+          <button class="chip active" data-days="30">30 days</button>
+          <button class="chip" data-days="90">90 days</button>
+          <button class="chip" data-days="0">All time</button>
+        </div>
+        <label class="sr-only" for="profileSel">Whose analyses to show</label><select class="input sm" id="profileSel"></select>
+        <button class="btn sm" id="csvBtn"><i data-icon="download" data-size="16"></i>CSV</button>
+        <button class="btn sm" id="printBtn"><i data-icon="print" data-size="16"></i>Print</button>
+        <a class="btn primary sm" href="analyze.html"><i data-icon="plus" data-size="16"></i>New analysis</a>
+      </div>
+    </header>
+
+    <section class="card import-cta no-print" id="importCta" hidden>
+      <div class="card-icon"><i data-icon="upload" data-size="22"></i></div>
+      <div style="flex:1;min-width:220px"><h2 class="h3" style="margin:0 0 4px">See your full Instagram and YouTube habits</h2>
+      <p class="muted" style="font-size:14px">Import your downloaded history for a report on when you scroll, how much, and what it's about. Your files never leave this browser.</p></div>
+      <a class="btn primary" href="import.html"><i data-icon="upload" data-size="16"></i>Import my data</a>
+    </section>
+
+    <p id="periodNote" class="muted" aria-live="off"></p>
+    <p id="dashStatus" class="sr-only" role="status" aria-live="polite"></p>
+
+    <div id="guestNote" class="notice guest-note" hidden>
+      <i data-icon="users" data-size="18"></i>
+      <div>You're browsing as a guest. <a class="link" href="login.html">Log in</a> to see your name and plan here. Your analyses are saved in this browser either way.</div>
+    </div>
+
+    <div id="demoBar" class="notice" role="status" hidden>
+      <i data-icon="eye" data-size="18"></i>
+      <div><b>You're viewing sample data.</b> Your charts will fill in as you analyze Reels. <button class="link" id="demoOff">Hide sample data</button></div>
+    </div>
+
+    <section id="emptyState" class="card empty" hidden>
+      <div class="e-ico"><i data-icon="chart" data-size="32"></i></div>
+      <h2 id="emptyTitle">No analyses yet</h2>
+      <p id="emptyText" style="margin:8px auto 20px;max-width:420px">Analyze your first Reel and your dashboard fills with trends, emotion breakdowns and insights.</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <a class="btn primary" href="analyze.html">Analyze a Reel</a>
+        <button class="btn" id="widenBtn" hidden>Show all time</button>
+        <button class="btn" id="demoOn">Preview with sample data</button>
+      </div>
+    </section>
+
+    <div id="dashBody">
+      <section class="kpis" id="kpis"></section>
+
+      <div class="dgrid">
+        <section class="card span2">
+          <div class="card-head"><h2 class="h-card">Emotion trends</h2><span class="muted" style="font-size:12.5px">average score of your top emotions over time</span></div>
+          <div id="trendChart"></div>
+        </section>
+        <section class="card">
+          <div class="card-head"><h2 class="h-card">Dominant emotions</h2><span class="muted" style="font-size:12.5px">share of analyses</span></div>
+          <div id="donut"></div>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2 class="h-card">Your emotional fingerprint</h2><span class="muted" style="font-size:12.5px">average across all 16</span></div>
+          <div id="radar" class="radar-box"></div>
+        </section>
+        <section class="card">
+          <div class="card-head"><h2 class="h-card">Visual vs. audio</h2><span class="muted" style="font-size:12.5px">where the feeling comes from</span></div>
+          <div id="vsAudio"></div>
+        </section>
+        <section class="card">
+          <div class="card-head"><h2 class="h-card">Activity</h2><span class="muted" style="font-size:12.5px" id="streakText"></span></div>
+          <div id="heatmap"></div>
+        </section>
+
+        <section class="card span2">
+          <div class="card-head"><h2 class="h-card">Pacing vs. emotion strength</h2><span class="muted" style="font-size:12.5px">each dot is a Reel · color = dominant emotion</span></div>
+          <div id="scatter"></div>
+        </section>
+        <section class="card">
+          <div class="card-head"><h2 class="h-card">Look &amp; feel</h2><span class="muted" style="font-size:12.5px">brightness and saturation</span></div>
+          <div id="lookChart"></div>
+        </section>
+
+        <section class="card span2">
+          <div class="card-head"><h2 class="h-card">Wellbeing of your feed</h2><span class="muted" style="font-size:12.5px">calm vs. heavier-toned analyses</span></div>
+          <div id="wellChart"></div>
+        </section>
+        <section class="card">
+          <div class="card-head"><h2 class="h-card">Insights</h2></div>
+          <div id="insightList"></div>
+        </section>
+
+        <section class="card span3">
+          <div class="card-head"><h2 class="h-card">Strongest vibes</h2><a class="link-arrow" href="history.html">All analyses <i data-icon="arrow" data-size="16"></i></a></div>
+          <div id="topList" class="top-list"></div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+<div id="site-footer"></div>
+<script src="../js/core/moods.js"></script>
+<script src="../js/core/store.js"></script>
+<script src="../js/core/wellbeing.js"></script>
+<script src="../js/core/icons.js"></script>
+<script src="../js/core/charts.js"></script>
+<script src="../js/core/analytics.js"></script>
+<script src="../js/core/imports/store.js"></script>
+<script src="../js/core/layout.js"></script>
+<script src="../js/pages/dashboard.js"></script>
+</body>
+</html>

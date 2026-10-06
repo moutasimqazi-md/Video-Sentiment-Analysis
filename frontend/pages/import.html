@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Import your data — NeuroLens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="../assets/img/favicon-48.png">
+<link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<meta name="theme-color" content="#fcfaf8">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/pages.css">
+<link rel="stylesheet" href="../css/dashboard.css">
+<link rel="stylesheet" href="../css/imports.css">
+</head>
+<body data-root="../" data-active="dashboard" data-shell="app" data-nav="import">
+<a class="skip" href="#main">Skip to content</a>
+<div id="site-header"></div>
+
+<main class="container page" id="main" tabindex="-1">
+  <div class="page-head">
+    <span class="badge"><i data-icon="upload" data-size="14"></i>Import</span>
+    <h1 style="margin-top:12px">Import your Instagram &amp; YouTube history</h1>
+    <p>Download your history from each service, drop the files here, and get a habits report: when you scroll, how much, what it's about, and what to watch out for.</p>
+  </div>
+
+  <section class="card privacy-card" aria-labelledby="privHead">
+    <h2 class="h3" id="privHead"><i data-icon="shield" data-size="18"></i> Your files stay on your device</h2>
+    <ul class="ticks">
+      <li><i data-icon="check" data-size="16"></i>Everything is read and analyzed in this browser. Your export is never uploaded.</li>
+      <li><i data-icon="check" data-size="16"></i>Only history files are opened (watched, liked, saved, searches). Private messages and personal details are skipped and never read.</li>
+      <li><i data-icon="check" data-size="16"></i>We keep a summary and a list of items for browsing, in this browser only. You can delete it any time.</li>
+    </ul>
+  </section>
+
+  <div class="grid c2 howto">
+    <article class="card">
+      <div class="card-icon"><i data-icon="instagram" data-size="22"></i></div>
+      <h2 class="h3">Instagram</h2>
+      <ol class="steps-list">
+        <li>Open <b>Accounts Center → Your information and permissions → Download your information</b>.</li>
+        <li>Choose your account, then <b>Some of your information</b>. Tick <b>Likes, Saved, Comments, Story interactions, Posts and Videos viewed (Ads information), Followers and following, Searches</b>.</li>
+        <li>Set the date range to <b>Last year</b> or <b>All time</b>, the format to <b>JSON</b>, and media quality to the lowest (media isn't needed).</li>
+        <li>Wait for Instagram's email, download the <b>.zip</b>, and drop it below.</li>
+      </ol>
+      <p class="muted note">Instagram only keeps about the last 7 days of viewed reels in an export. Likes can go back a year or more, so long-term patterns come from those.</p>
+      <a class="btn sm" href="https://accountscenter.instagram.com/info_and_permissions/dyi/" target="_blank" rel="noopener noreferrer">Open Instagram's export page<i data-icon="external" data-size="15"></i><span class="sr-only"> (opens in a new tab)</span></a>
+    </article>
+    <article class="card">
+      <div class="card-icon blue"><i data-icon="play" data-size="22"></i></div>
+      <h2 class="h3">YouTube (Google Takeout)</h2>
+      <ol class="steps-list">
+        <li>Go to <b>takeout.google.com</b> and click <b>Deselect all</b>.</li>
+        <li>Tick <b>YouTube and YouTube Music</b>, then <b>All YouTube data included</b> and keep <b>history</b> (add <b>subscriptions</b> and <b>playlists</b> if you like).</li>
+        <li>Under <b>Multiple formats</b>, change <b>history</b> from HTML to <b>JSON</b>. This matters: HTML dates depend on your language.</li>
+        <li>Create the export, download the <b>.zip</b>, and drop it below. Both services can be added together or one at a time.</li>
+      </ol>
+      <p class="muted note">YouTube history lists titles and channels but not watch time, so the report counts videos instead of minutes.</p>
+      <a class="btn sm" href="https://takeout.google.com/" target="_blank" rel="noopener noreferrer">Open Google Takeout<i data-icon="external" data-size="15"></i><span class="sr-only"> (opens in a new tab)</span></a>
+    </article>
+  </div>
+
+  <section class="panel" id="dropPanel" aria-labelledby="addHead">
+    <h2 class="h3" id="addHead">Add your files</h2>
+    <label class="dropzone" id="importDrop" for="importFiles">
+      <input id="importFiles" type="file" multiple accept=".zip,.json,.csv,.html,.htm" hidden>
+      <div class="dz-icon"><i data-icon="upload" data-size="28"></i></div>
+      <strong>Drop your ZIP files here<br>or click to browse</strong>
+      <small>Instagram export (.zip) · Google Takeout (.zip) · or the unzipped files and folders</small>
+    </label>
+    <div class="drop-actions">
+      <button class="btn" type="button" id="pickFolder"><i data-icon="film" data-size="16"></i>Choose an unzipped folder</button>
+      <input id="importFolder" type="file" webkitdirectory hidden>
+    </div>
+    <div id="importErr" role="alert" class="notice err" hidden></div>
+    <div class="run-state" id="readState" role="status" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
+      <div class="stage" id="readStage">Reading…</div>
+      <div class="progress" role="progressbar" aria-label="Reading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="readProgWrap"><i id="readProg"></i></div>
+    </div>
+  </section>
+
+  <section class="card" id="foundPanel" aria-labelledby="foundHead" hidden>
+    <h2 class="h3" id="foundHead">What we found</h2>
+    <p class="muted" id="foundSummary"></p>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Files found in your export (scrolls sideways on small screens)"><table class="data-table" id="foundTable"></table></div>
+    <ul class="notes" id="foundNotes"></ul>
+    <div class="build-row">
+      <div class="field" style="margin:0;flex:1;min-width:220px">
+        <label for="targetProfile">Whose data is this?</label>
+        <select class="input" id="targetProfile"></select>
+      </div>
+    </div>
+    <label class="consent" id="consentRow" hidden><input type="checkbox" id="consentBox"><span>This is my child's data, and they know I'm reviewing it with them.</span></label>
+    <div id="mergeNote" class="notice" hidden><i data-icon="sparkle" data-size="18"></i><div id="mergeText"></div></div>
+    <div class="actions-row">
+      <button class="btn primary lg" id="buildBtn"><i data-icon="chart" data-size="18"></i>Build my report</button>
+      <button class="btn lg ghost" id="cancelBtn">Start over</button>
+    </div>
+  </section>
+
+  <section class="section tight" id="savedSection" aria-labelledby="savedHead" hidden>
+    <h2 class="h3" id="savedHead" style="margin-bottom:12px">Saved reports</h2>
+    <div class="grid" id="savedList"></div>
+  </section>
+</main>
+
+<div id="site-footer"></div>
+<script src="../js/core/moods.js"></script>
+<script src="../js/core/store.js"></script>
+<script src="../js/core/wellbeing.js"></script>
+<script src="../js/core/icons.js"></script>
+<script src="../js/core/charts.js"></script>
+<script src="../js/data/lexicon.js"></script>
+<script src="../js/core/zip.js"></script>
+<script src="../js/core/imports/parse.js"></script>
+<script src="../js/core/imports/themes.js"></script>
+<script src="../js/core/imports/habits.js"></script>
+<script src="../js/core/imports/store.js"></script>
+<script src="../js/core/layout.js"></script>
+<script src="../js/pages/import.js"></script>
+</body>
+</html>

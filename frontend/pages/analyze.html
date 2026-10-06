@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Analyze — NeuroLens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="../assets/img/favicon-48.png">
+<link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<meta name="theme-color" content="#fcfaf8">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/pages.css">
+<link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body data-root="../" data-active="analyze" data-shell="app" data-nav="analyze">
+<a class="skip" href="#main">Skip to content</a>
+<div id="site-header"></div>
+
+<main class="container page" id="main" tabindex="-1">
+  <a class="back no-print" data-back data-back-optional data-back-skip="results,history,dashboard,family,account,report" href="dashboard.html" data-back-label="Back to dashboard"><i data-icon="back" data-size="16"></i><span class="back-label">Back to dashboard</span></a>
+  <div class="page-head">
+    <h1>Analyze an Instagram Reel</h1>
+    <p>Paste a Reel link or upload a recording to see the emotions it carries — for your own content, or for what your child is watching.</p>
+  </div>
+
+  <div class="analyze-layout">
+    <section class="panel" id="inputPanel">
+      <div class="quota"><span>Plan: <b id="planName"></b></span><span id="quotaText"></span></div>
+      <div class="field">
+        <label for="profileSel">Who is this for?</label>
+        <select class="input" id="profileSel"></select>
+      </div>
+      <div class="tabs" role="tablist" aria-label="How to add the Reel">
+        <button class="tab active" data-tab="link" role="tab" aria-selected="true" aria-controls="tabLink" id="tabBtnLink"><i data-icon="instagram" data-size="18"></i>Instagram link</button>
+        <button class="tab" data-tab="file" role="tab" aria-selected="false" aria-controls="tabFile" id="tabBtnFile"><i data-icon="upload" data-size="18"></i>Upload video</button>
+      </div>
+
+      <div id="tabFile" role="tabpanel" aria-labelledby="tabBtnFile" hidden>
+        <label class="dropzone" id="dropzone" for="videoInput">
+          <input id="videoInput" type="file" accept="video/*,.mp4,.mov,.avi,.mkv,.webm" hidden>
+          <div class="dz-icon"><i data-icon="upload" data-size="28"></i></div>
+          <strong>Drop your video here<br>or click to browse</strong>
+          <small>Screen recordings and videos · MP4, MOV, AVI, MKV, WEBM · up to 300 MB</small>
+        </label>
+        <div class="file-chip" id="fileChip" hidden>
+          <img id="fileThumb" alt="">
+          <div class="meta"><b id="fileName"></b><span id="fileMeta"></span></div>
+          <button class="btn sm" id="fileClear" type="button">Remove</button>
+        </div>
+      </div>
+
+      <div id="tabLink" role="tabpanel" aria-labelledby="tabBtnLink">
+        <div class="field">
+          <label for="linkInput">Instagram Reel link</label>
+          <input class="input" id="linkInput" type="url" placeholder="https://www.instagram.com/reel/…">
+        </div>
+        <div class="notice"><i data-icon="instagram" data-size="18"></i><div>In Instagram: open the Reel → <b>Share</b> → <b>Copy link</b>. Private account? <b>Screen-record</b> the Reel and use “Upload video”.</div></div>
+      </div>
+
+      <div id="errBox" role="alert" class="notice err" style="margin-top:14px" hidden></div>
+      <button class="btn primary full lg" id="analyzeBtn" style="margin-top:18px">Analyze Reel<i data-icon="arrow" data-size="18"></i></button>
+      <p class="muted" style="font-size:12px;text-align:center;margin-top:12px">Your video is processed securely and deleted right after analysis.</p>
+
+      <div class="run-state" id="runState">
+        <div class="spinner"></div>
+        <div class="stage" id="stageText" aria-live="polite">Starting…</div>
+        <div class="progress" id="progWrap" role="progressbar" aria-label="Analysis progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="margin:10px 0"><i id="progBar"></i></div>
+        <small class="muted" id="progText"></small>
+      </div>
+    </section>
+
+    <aside class="grid">
+      <div class="card">
+        <h2 class="h3">What can you analyze?</h2>
+        <p>Reels, shorts, TikToks, food and travel videos, lifestyle content, comedy skits — anything up to a few minutes.</p>
+        <ul class="side-list">
+          <li><span class="n">✓</span><span>16 emotion scores with a combined visual + audio view</span></li>
+          <li><span class="n">✓</span><span>Emotion timeline across the clip</span></li>
+          <li><span class="n">✓</span><span>Pacing, brightness and color insights</span></li>
+          <li><span class="n">✓</span><span>A wellbeing signal that flags emotionally heavy content</span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-icon blue"><i data-icon="file" data-size="22"></i></div>
+        <h2 class="h3">Just exploring?</h2>
+        <p>Open a ready-made report to see what you'll get.</p>
+        <a class="btn sm" style="margin-top:12px" href="results.html?id=sample">View sample report</a>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<div id="site-footer"></div>
+<script src="../js/core/moods.js"></script>
+<script src="../js/core/store.js"></script>
+<script src="../js/core/api.js"></script>
+<script src="../js/core/wellbeing.js"></script>
+<script src="../js/core/icons.js"></script>
+<script src="../js/core/layout.js"></script>
+<script src="../js/pages/analyze.js"></script>
+</body>
+</html>

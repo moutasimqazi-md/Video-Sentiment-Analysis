@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Habits report — NeuroLens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="../assets/img/favicon-48.png">
+<link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<meta name="theme-color" content="#fcfaf8">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/pages.css">
+<link rel="stylesheet" href="../css/dashboard.css">
+<link rel="stylesheet" href="../css/imports.css">
+</head>
+<body data-root="../" data-active="dashboard" data-shell="app" data-nav="import">
+<a class="skip" href="#main">Skip to content</a>
+<div id="site-header"></div>
+
+<main class="container page" id="main" tabindex="-1">
+  <div id="noReport" class="card empty" hidden>
+    <div class="e-ico"><i data-icon="upload" data-size="32"></i></div>
+    <h1 class="h3" style="font-size:22px">No imported data yet</h1>
+    <p style="margin:8px auto 20px;max-width:440px">Import your Instagram and YouTube history to get a habits report: when you scroll, how much, and what it's about.</p>
+    <a class="btn primary" href="import.html" id="noReportCta">Import my data</a>
+  </div>
+
+  <div id="reportWrap" hidden>
+    <header class="dash-head">
+      <div>
+        <p class="muted" id="subjectLine" style="font-size:14px"></p>
+        <h1 id="hbTitle">Habits report</h1>
+        <p class="muted" id="hbSub" style="font-size:13.5px;margin-top:4px"></p>
+      </div>
+      <div class="dash-tools no-print">
+        <button class="btn sm" id="csvBtn"><i data-icon="download" data-size="16"></i>CSV</button>
+        <button class="btn sm" id="printBtn"><i data-icon="print" data-size="16"></i>Print</button>
+        <a class="btn sm" id="updateBtn" href="import.html"><i data-icon="upload" data-size="16"></i>Add or update data</a>
+        <button class="btn sm ghost" id="deleteBtn" aria-label="Delete imported data"><i data-icon="trash" data-size="18"></i></button>
+      </div>
+    </header>
+    <p id="hbStatus" class="sr-only" role="status" aria-live="polite"></p>
+
+    <div class="hb-tabs no-print" role="tablist" aria-label="Report sections" id="hbTabs"></div>
+
+    <section class="hb-panel" id="panel-overview" role="tabpanel" aria-labelledby="tab-overview" tabindex="0"></section>
+    <section class="hb-panel" id="panel-ig" role="tabpanel" aria-labelledby="tab-ig" tabindex="0" hidden></section>
+    <section class="hb-panel" id="panel-yt" role="tabpanel" aria-labelledby="tab-yt" tabindex="0" hidden></section>
+    <section class="hb-panel" id="panel-content" role="tabpanel" aria-labelledby="tab-content" tabindex="0" hidden></section>
+    <section class="hb-panel" id="panel-browse" role="tabpanel" aria-labelledby="tab-browse" tabindex="0" hidden></section>
+  </div>
+</main>
+
+<div id="site-footer"></div>
+<script src="../js/core/moods.js"></script>
+<script src="../js/core/store.js"></script>
+<script src="../js/core/api.js"></script>
+<script src="../js/core/wellbeing.js"></script>
+<script src="../js/core/icons.js"></script>
+<script src="../js/core/charts.js"></script>
+<script src="../js/data/lexicon.js"></script>
+<script src="../js/core/imports/parse.js"></script>
+<script src="../js/core/imports/themes.js"></script>
+<script src="../js/core/imports/habits.js"></script>
+<script src="../js/core/imports/store.js"></script>
+<script src="../js/core/layout.js"></script>
+<script src="../js/pages/habits.js"></script>
+</body>
+</html>

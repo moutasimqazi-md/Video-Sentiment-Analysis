@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Analysis results — NeuroLens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="../assets/img/favicon-48.png">
+<link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<meta name="theme-color" content="#fcfaf8">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/pages.css">
+<link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body data-root="../" data-active="dashboard" data-shell="app" data-nav="history">
+<a class="skip" href="#main">Skip to content</a>
+<div id="site-header"></div>
+
+<main class="container page" id="main" tabindex="-1">
+  <a class="back no-print" data-back data-back-skip="analyze,login,checkout" href="history.html" data-back-label="Back to history"><i data-icon="back" data-size="16"></i><span class="back-label">Back to history</span></a>
+
+  <div id="missing" class="empty" hidden>
+    <div class="e-ico"><i data-icon="file" data-size="32"></i></div><h2>We couldn't find that analysis</h2>
+    <p style="margin:8px 0 18px">It may have been deleted, or it was created in a different browser.</p>
+    <a class="btn primary" href="analyze.html">Analyze a video</a>
+  </div>
+
+  <div id="report" hidden>
+    <div class="page-head" style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-end">
+      <div><h1>Analysis results</h1><p id="subtitle">Here's what the AI found about your content.</p></div>
+      <div class="no-print" style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn" id="copyBtn"><i data-icon="copy" data-size="16"></i>Copy summary</button>
+        <button class="btn" id="exportBtn"><i data-icon="download" data-size="16"></i>Download report</button>
+        <a class="btn primary" href="analyze.html">Analyze another</a>
+      </div>
+    </div>
+
+    <div class="res-top">
+      <div class="card media-card">
+        <div class="thumb" id="thumb"></div>
+        <div style="min-width:0"><b id="title" class="tt"></b>
+          <span class="muted" id="meta" style="font-size:13px"></span></div>
+      </div>
+      <div class="card">
+        <div class="dom">
+          <div><span class="muted" style="font-size:13px">Dominant emotion</span>
+            <div style="display:flex;align-items:center;gap:12px;margin-top:4px"><span class="emoji" id="domEmoji"></span>
+              <div><h2 id="domName"></h2><span class="muted" id="domLabel" style="font-size:13px"></span></div></div></div>
+          <div class="ring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--surface-2)" stroke-width="11"/>
+            <circle id="ringArc" cx="60" cy="60" r="52" fill="none" stroke="url(#g)" stroke-width="11" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7" style="transition:stroke-dashoffset .9s">
+            </circle><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8f7e"/><stop offset="1" stop-color="#f4685f"/></linearGradient></defs></svg>
+            <div class="val"><div><span id="ringVal"></span><small>match</small></div></div></div>
+        </div>
+        <div class="stats" id="stats"></div>
+      </div>
+    </div>
+
+    <div id="alertBox"></div>
+
+    <div class="verdict" style="margin-top:20px" id="verdict"></div>
+
+    <div class="res-grid">
+      <div class="grid" style="gap:20px">
+        <section class="card">
+          <div class="card-head"><h3>Emotional profile</h3>
+            <div class="chips no-print" id="srcChips" role="group" aria-label="Score source">
+              <button class="chip active" data-src="combined" aria-pressed="true">Combined</button>
+              <button class="chip" data-src="visual" aria-pressed="false">Visual</button>
+              <button class="chip" data-src="audio" aria-pressed="false">Audio</button>
+            </div></div>
+          <div class="muted" id="srcNote" style="font-size:12px;margin-bottom:8px"></div>
+          <div id="bars" aria-live="polite"></div>
+          <button class="btn sm ghost no-print" id="moreBtn" style="margin-top:8px">Show all 16 emotions</button>
+        </section>
+        <section class="card">
+          <div class="card-head"><h3>Emotion timeline</h3><span class="muted" style="font-size:12px">top 3 emotions over time</span></div>
+          <div id="chartWrap"></div>
+          <div class="legend" id="legend"></div>
+        </section>
+      </div>
+
+      <div class="grid" style="gap:20px">
+        <section class="card" id="wbCard"><div class="card-head"><h3>Wellbeing signal</h3><span class="badge" id="wbBadge"></span></div>
+          <p id="wbText" style="margin-bottom:10px"></p><div id="wbDrivers" class="chips"></div>
+          <p class="muted" style="font-size:12px;margin-top:12px">Based on emotional tone only. It can't detect explicit or unsafe content, captions or comments.</p></section>
+        <section class="card"><div class="card-head"><h3>Creator insights</h3></div><div id="insights"></div></section>
+        <section class="card feedback no-print">
+          <h3>Was this accurate?</h3>
+          <p>Your feedback helps improve future results.</p>
+          <div class="row"><button class="btn sm" data-rate="good"><i data-icon="thumbup" data-size="16"></i>Spot on</button><button class="btn sm" data-rate="bad"><i data-icon="thumbdown" data-size="16"></i>Off</button></div>
+          <div id="fixBox" hidden>
+            <div class="field"><label for="fixMood">What should it have been?</label>
+              <select class="input" id="fixMood"><option value="">Pick an emotion…</option></select></div>
+            <button class="btn primary sm" id="sendFix">Send feedback</button>
+          </div>
+          <div id="fbMsg" class="muted" style="font-size:13px"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="site-footer"></div>
+<script src="../js/core/moods.js"></script>
+<script src="../js/core/store.js"></script>
+<script src="../js/core/api.js"></script>
+<script src="../js/data/sample.js"></script>
+<script src="../js/core/wellbeing.js"></script>
+<script src="../js/core/icons.js"></script>
+<script src="../js/core/layout.js"></script>
+<script src="../js/pages/results.js"></script>
+</body>
+</html>

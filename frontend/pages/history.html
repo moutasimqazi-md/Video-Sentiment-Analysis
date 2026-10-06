@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>History — NeuroLens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="../assets/img/favicon-48.png">
+<link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<meta name="theme-color" content="#fcfaf8">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/pages.css">
+<link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body data-root="../" data-active="history" data-shell="app" data-nav="history">
+<a class="skip" href="#main">Skip to content</a>
+<div id="site-header"></div>
+
+<main class="container page" id="main" tabindex="-1">
+  <div class="page-head" style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+    <div><h1>Your analyses</h1><p>Everything you've analyzed, saved in this browser.</p></div>
+    <a class="btn primary" href="analyze.html">+ New analysis</a>
+  </div>
+  <div class="card" style="margin-bottom:18px">
+    <div class="quota" style="margin:0"><span>This month: <b id="usedText"></b></span><a class="link" href="pricing.html">Upgrade</a></div>
+    <div class="progress meter"><i id="usedBar"></i></div>
+  </div>
+  <div class="toolbar no-print">
+    <label class="sr-only" for="search">Search analyses</label><input class="input" id="search" type="search" placeholder="Search by title or emotion…">
+    <label class="sr-only" for="profile">Filter by person</label><select class="input" id="profile" style="max-width:200px"></select>
+    <label class="sr-only" for="sort">Sort analyses</label><select class="input" id="sort" style="max-width:180px"><option value="new">Newest first</option><option value="old">Oldest first</option><option value="pct">Strongest emotion</option></select>
+    <a class="btn sm" id="weekly" href="report.html?days=7">Weekly report</a>
+    <button class="btn sm" id="clearAll">Clear all</button>
+  </div>
+  <div class="hist" id="list" aria-live="polite"></div>
+</main>
+
+<div id="site-footer"></div>
+<script src="../js/core/moods.js"></script>
+<script src="../js/core/store.js"></script>
+<script src="../js/core/wellbeing.js"></script>
+<script src="../js/core/icons.js"></script>
+<script src="../js/core/layout.js"></script>
+<script src="../js/pages/history.js"></script>
+</body>
+</html>
