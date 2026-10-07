@@ -98,10 +98,14 @@
       const merged = { ig: pending.events.ig.length ? pending.events.ig : existing.ig, yt: pending.events.yt.length ? pending.events.yt : existing.yt };
       const meta = { files: pending.intake.files, ignoredPrivate: pending.intake.ignoredPrivate, ranges: pending.ranges };
       await new Promise((r) => setTimeout(r, 30));
-      const report = NL.imp.habits.analyze(merged, meta);
       await S.putEvents(profile, merged);
-      S.saveReport(profile, report);
-      location.href = `habits.html?profile=${encodeURIComponent(profile)}`;
+      // a separate report for each platform that was in these files; nothing is combined
+      const built = S.SRCS.filter((src) => pending.events[src].length);
+      for (const src of built) S.saveReport(profile, src, NL.imp.habits.analyze({ [src]: merged[src] }, meta));
+      if (built.length === 1) { location.href = `habits.html?profile=${encodeURIComponent(profile)}&src=${built[0]}`; return; }
+      pending = null; $("foundPanel").hidden = true; busy(false); $("buildBtn").disabled = false; $("importFiles").value = "";
+      renderSaved(); NL.toast("Two separate reports were created");
+      $("savedSection").scrollIntoView({ block: "start" });
     } catch (e) {
       busy(false); $("buildBtn").disabled = false;
       showErr("We couldn't save the report: " + (e && e.message ? e.message : "unknown error") + ". If your browser is in private mode, storage may be disabled.");
@@ -122,22 +126,21 @@
 
   /* ---------- saved reports ---------- */
   function renderSaved() {
-    const ids = S.profilesWithReports();
-    $("savedSection").hidden = !ids.length;
-    $("savedList").innerHTML = ids.map((id) => {
-      const r = S.getReport(id), who = NL.profiles.name(id);
-      const plats = Object.keys(r.platforms).map((k) => (k === "ig" ? "Instagram" : "YouTube")).join(" + ");
+    const items = S.allReports();
+    $("savedSection").hidden = !items.length;
+    $("savedList").innerHTML = items.map(({ id, src, report: r }) => {
+      const who = NL.profiles.name(id), plat = src === "ig" ? "Instagram" : "YouTube";
       const lvl = r.overall.level;
-      return `<article class="card saved-card"><div class="saved-main"><b>${NL.esc(who === "Me" ? "My report" : who + "'s report")}</b>
-        <span class="muted">${plats} · imported ${NL.fmtDate(r.createdAt)}</span></div>
+      return `<article class="card saved-card"><div class="saved-main"><b>${NL.esc(who === "Me" ? `My ${plat} report` : `${who}'s ${plat} report`)}</b>
+        <span class="muted">Imported ${NL.fmtDate(r.createdAt)}</span></div>
         <span class="score-pill ${lvl}" aria-label="Habits score ${r.overall.score ?? "n/a"} out of 100">${r.overall.score ?? "–"}</span>
-        <div class="row-actions"><a class="btn sm primary" href="habits.html?profile=${encodeURIComponent(id)}">Open report</a>
-        <button class="btn sm ghost" data-del="${NL.esc(id)}" aria-label="Delete imported data for ${NL.esc(who)}">${NL.icon("trash", 18)}</button></div></article>`;
+        <div class="row-actions"><a class="btn sm primary" href="habits.html?profile=${encodeURIComponent(id)}&src=${src}">Open report</a>
+        <button class="btn sm ghost" data-del="${NL.esc(id)}" data-src="${src}" aria-label="Delete the ${plat} data for ${NL.esc(who)}">${NL.icon("trash", 18)}</button></div></article>`;
     }).join("");
   }
   $("savedList").addEventListener("click", async (e) => {
     const b = e.target.closest("[data-del]");
-    if (b && confirm("Delete this imported data and report from this browser?")) { await S.remove(b.dataset.del); renderSaved(); NL.toast("Imported data deleted"); }
+    if (b && confirm("Delete this imported data and report from this browser?")) { await S.remove(b.dataset.del, b.dataset.src); renderSaved(); NL.toast("Imported data deleted"); }
   });
 
   renderSaved();

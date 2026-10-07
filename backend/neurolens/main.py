@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from neurolens import analyzer, downloader, logstore
+from neurolens import analyzer, calibration, downloader, logstore
 from neurolens.analyzer import analyze_video
 
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
@@ -26,7 +26,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-ALLOWED_EXTENSIONS = {".mp4", ".mov", ".avi", ".mkv", ".webm"}
+VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".mkv", ".webm"}
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+ALLOWED_EXTENSIONS = VIDEO_EXTENSIONS | IMAGE_EXTENSIONS
 MAX_UPLOAD_BYTES = 300 * 1024 * 1024  # 300 MB
 JOB_TTL_SECONDS = 30 * 60
 TEMP_PREFIX = "vsa_"  # everything this app writes to the temp dir starts with this
@@ -101,6 +103,10 @@ def _start_job(target, arg):
 
 
 def _analyze(job_id, video_path, lo=0.0, hi=1.0):
+    if Path(video_path).suffix.lower() in IMAGE_EXTENSIONS:
+        return analyzer.analyze_image(
+            video_path, progress=lambda stage, frac: _update(job_id, stage=stage, progress=round(lo + (hi - lo) * frac, 3))
+        )
     return analyze_video(
         video_path,
         progress=lambda stage, frac: _update(job_id, stage=stage, progress=round(lo + (hi - lo) * frac, 3)),
@@ -115,12 +121,18 @@ def _finish(job_id, result, error, deleted, source):
 
     embeddings = result.pop("_embeddings", None)
     thumbnail_jpg = result.pop("_thumbnail_jpg", None)
+    keyframes = result.pop("_keyframes", None) or []
+    result["keyframes"] = []
+    for n, k in enumerate(keyframes):
+        (logstore.KEY_DIR / f"{job_id}_{n}.jpg").write_bytes(k.pop("jpg"))
+        k["url"] = f"api/keyframes/{job_id}/{n}.jpg"
+        result["keyframes"].append(k)
     if result.get("audio", {}).get("embedding") is not None:
         result["audio"] = {k: v for k, v in result["audio"].items() if k != "embedding"}
 
     result["video_deleted"] = deleted
     result["source"] = source
-    logstore.record(job_id, source=source, result=result, embeddings=embeddings, thumbnail_jpg=thumbnail_jpg)
+    logstore.record(job_id, source=source, result=result, embeddings=embeddings, thumbnail_jpg=thumbnail_jpg, kind=result.get("kind", "video"))
     _update(job_id, status="done", stage="Done", progress=1.0, result=result, deleted=deleted)
 
 
@@ -221,6 +233,7 @@ def submit_feedback(job_id: str, req: FeedbackRequest):
         logstore.set_feedback(job_id, req.rating, req.corrected_mood, req.note)
     except KeyError:
         raise HTTPException(404, "Unknown job_id — nothing was logged for it (maybe it errored?)")
+    threading.Thread(target=calibration.rebuild, args=(list(analyzer.CATEGORY_PROMPTS),), daemon=True).start()
     return {"ok": True}
 
 
@@ -246,6 +259,23 @@ def thumbnail(job_id: str):
     if not path.is_file():
         raise HTTPException(404, "Not found")
     return FileResponse(path, media_type="image/jpeg", headers={"Cache-Control": "public, max-age=86400, immutable"})
+
+
+@app.get("/api/keyframes/{job_id}/{n}.jpg")
+def keyframe(job_id: str, n: int):
+    """Evidence frames saved with an analysis."""
+    if not THUMB_NAME.match(job_id) or not 0 <= n < 12:
+        raise HTTPException(404, "Not found")
+    path = logstore.KEY_DIR / f"{job_id}_{n}.jpg"
+    if not path.is_file():
+        raise HTTPException(404, "Not found")
+    return FileResponse(path, media_type="image/jpeg", headers={"Cache-Control": "public, max-age=86400, immutable"})
+
+
+@app.get("/api/model/info")
+def model_info():
+    c = calibration.info()
+    return {"learning": c["active"], "rated_examples": c["examples"]}
 
 
 # Registered last so the /api routes win; serves index.html at "/" and pages/*.html, css/, js/, assets/.

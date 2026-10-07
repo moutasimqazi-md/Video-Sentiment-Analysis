@@ -35,13 +35,33 @@ NL.imp.store = (() => {
   const putEvents = (profile, ev) => run("readwrite", (s) => s.put({ ig: (ev.ig || []).map(slim), yt: (ev.yt || []).map(slim), savedAt: Date.now() }, "items:" + profile));
   const dropEvents = (profile) => run("readwrite", (s) => s.delete("items:" + profile));
 
-  const key = (p) => "imp_" + (p || "me");
-  const getReport = (profile) => NL.store.get(key(profile), null);
-  /** Saves a report; the previous one is kept as a compact snapshot so the next import can show what changed. */
-  function saveReport(profile, report) {
-    const prev = getReport(profile);
+  /* One report per profile AND platform: Instagram and YouTube are never merged into a single report. */
+  const SRCS = ["ig", "yt"];
+  const key = (p, src) => "imp_" + (p || "me") + "_" + src;
+
+  /** Older versions saved one combined report per profile. Split it into one report per platform, once. */
+  function migrate() {
+    for (const id of ["me", ...NL.profiles.children().map((c) => c.id)]) {
+      const old = NL.store.get("imp_" + id, null);
+      if (!old || !old.platforms) continue;
+      for (const [src, P] of Object.entries(old.platforms)) {
+        const v = P.verdict || {};
+        const prev = old.prev && old.prev.platforms && old.prev.platforms[src];
+        const r = { ...old, platforms: { [src]: P }, overall: { score: v.score ?? null, label: v.label, level: v.level, summary: v.summary }, prev: prev ? { createdAt: old.prev.createdAt, overall: prev.score, platforms: { [src]: prev } } : undefined };
+        if (!NL.store.get(key(id, src), null)) NL.store.set(key(id, src), r);
+      }
+      NL.store.del("imp_" + id);
+      const deep = NL.store.get("imp_deep_" + id, null);
+      if (deep) { NL.store.del("imp_deep_" + id); for (const src of Object.keys(old.platforms)) NL.store.set("imp_deep_" + id + "_" + src, deep); }
+    }
+  }
+
+  const getReport = (profile, src) => NL.store.get(key(profile, src), null);
+  /** Saves a single-platform report; the previous one is kept as a compact snapshot so the next import can show what changed. */
+  function saveReport(profile, src, report) {
+    const prev = getReport(profile, src);
     if (prev && prev.platforms) report.prev = snapshot(prev);
-    return NL.store.set(key(profile), report);
+    return NL.store.set(key(profile, src), report);
   }
   function snapshot(r) {
     const out = { createdAt: r.createdAt, overall: r.overall && r.overall.score, platforms: {} };
@@ -51,8 +71,19 @@ NL.imp.store = (() => {
     }
     return out;
   }
-  const profilesWithReports = () => ["me", ...NL.profiles.children().map((c) => c.id)].filter((id) => getReport(id));
-  async function remove(profile) { NL.store.del(key(profile)); try { await dropEvents(profile); } catch (e) { /* nothing stored */ } }
+  /** Every saved report as { id, src, report } */
+  const allReports = () => ["me", ...NL.profiles.children().map((c) => c.id)].flatMap((id) => SRCS.map((src) => ({ id, src, report: getReport(id, src) })).filter((x) => x.report));
+  /** The platforms this profile has a report for, e.g. ["ig", "yt"] */
+  const sourcesFor = (profile) => SRCS.filter((src) => getReport(profile, src));
+  async function remove(profile, src) {
+    NL.store.del(key(profile, src));
+    try {
+      const ev = await getEvents(profile);
+      ev[src] = [];
+      if (ev.ig.length || ev.yt.length) await putEvents(profile, ev); else await dropEvents(profile);
+    } catch (e) { /* nothing stored */ }
+  }
 
-  return { getEvents, putEvents, getReport, saveReport, profilesWithReports, remove, snapshot };
+  migrate();
+  return { getEvents, putEvents, getReport, saveReport, allReports, sourcesFor, remove, snapshot, SRCS };
 })();

@@ -59,6 +59,15 @@ NL.api = (() => {
     }
   }
 
+  /** One-shot status of a job (used by the background queue). Resolves {status, stage, progress, result, error}. */
+  async function jobStatus(jobId) {
+    try { return await json(await fetch(base + "api/jobs/" + jobId, { headers: H })); }
+    catch (e) { throw e instanceof TypeError ? networkError() : e; }
+  }
+
+  /** Absolute URL for a server-relative path such as a key-moment image. */
+  const url = (path) => (/^https?:/.test(path) ? path : base + path.replace(/^\//, ""));
+
   async function sendFeedback(jobId, rating, correctedMood, note) {
     const res = await fetch(base + "api/feedback/" + jobId, {
       method: "POST", headers: { ...H, "Content-Type": "application/json" },
@@ -67,5 +76,5 @@ NL.api = (() => {
     return json(res);
   }
 
-  return { base, uploadFile, analyzeLink, waitForJob, sendFeedback };
+  return { base, url, uploadFile, analyzeLink, waitForJob, jobStatus, sendFeedback };
 })();

@@ -24,8 +24,8 @@
 <main class="container page" id="main" tabindex="-1">
   <a class="back no-print" data-back data-back-optional data-back-skip="results,history,dashboard,family,account,report" href="dashboard.html" data-back-label="Back to dashboard"><i data-icon="back" data-size="16"></i><span class="back-label">Back to dashboard</span></a>
   <div class="page-head">
-    <h1>Analyze an Instagram Reel</h1>
-    <p>Paste a Reel link or upload a recording to see the emotions it carries — for your own content, or for what your child is watching.</p>
+    <h1>Analyze a Reel, video or image</h1>
+    <p>Paste links or upload files to see what the visuals and sound carry — for your own content, or for what your child is watching.</p>
   </div>
 
   <div class="analyze-layout">
@@ -35,36 +35,33 @@
         <label for="profileSel">Who is this for?</label>
         <select class="input" id="profileSel"></select>
       </div>
-      <div class="tabs" role="tablist" aria-label="How to add the Reel">
-        <button class="tab active" data-tab="link" role="tab" aria-selected="true" aria-controls="tabLink" id="tabBtnLink"><i data-icon="instagram" data-size="18"></i>Instagram link</button>
-        <button class="tab" data-tab="file" role="tab" aria-selected="false" aria-controls="tabFile" id="tabBtnFile"><i data-icon="upload" data-size="18"></i>Upload video</button>
+      <div class="tabs" role="tablist" aria-label="How to add content">
+        <button class="tab active" data-tab="link" role="tab" aria-selected="true" aria-controls="tabLink" id="tabBtnLink"><i data-icon="instagram" data-size="18"></i>Links</button>
+        <button class="tab" data-tab="file" role="tab" aria-selected="false" aria-controls="tabFile" id="tabBtnFile"><i data-icon="upload" data-size="18"></i>Upload files</button>
       </div>
 
       <div id="tabFile" role="tabpanel" aria-labelledby="tabBtnFile" hidden>
         <label class="dropzone" id="dropzone" for="videoInput">
-          <input id="videoInput" type="file" accept="video/*,.mp4,.mov,.avi,.mkv,.webm" hidden>
+          <input id="videoInput" type="file" accept="video/*,image/*,.mp4,.mov,.avi,.mkv,.webm,.jpg,.jpeg,.png,.webp" multiple hidden>
           <div class="dz-icon"><i data-icon="upload" data-size="28"></i></div>
-          <strong>Drop your video here<br>or click to browse</strong>
-          <small>Screen recordings and videos · MP4, MOV, AVI, MKV, WEBM · up to 300 MB</small>
+          <strong>Drop videos or images here<br>or click to browse</strong>
+          <small>MP4, MOV, WEBM, JPG, PNG, WEBP · up to 300 MB each · add up to 10</small>
         </label>
-        <div class="file-chip" id="fileChip" hidden>
-          <img id="fileThumb" alt="">
-          <div class="meta"><b id="fileName"></b><span id="fileMeta"></span></div>
-          <button class="btn sm" id="fileClear" type="button">Remove</button>
-        </div>
+        <div class="file-list" id="fileList" hidden></div>
       </div>
 
       <div id="tabLink" role="tabpanel" aria-labelledby="tabBtnLink">
         <div class="field">
-          <label for="linkInput">Instagram Reel link</label>
-          <input class="input" id="linkInput" type="url" placeholder="https://www.instagram.com/reel/…">
+          <label for="linkInput">Reel, Short or video links</label>
+          <textarea class="input" id="linkInput" rows="3" placeholder="https://www.instagram.com/reel/…&#10;Paste more links on new lines to queue several at once" spellcheck="false"></textarea>
         </div>
         <div class="notice"><i data-icon="instagram" data-size="18"></i><div>In Instagram: open the Reel → <b>Share</b> → <b>Copy link</b>. Private account? <b>Screen-record</b> the Reel and use “Upload video”.</div></div>
       </div>
 
+      <div id="queuedMsg" class="notice" role="status" style="margin-top:14px" hidden><i data-icon="bolt" data-size="18"></i><div id="queuedText"></div></div>
       <div id="errBox" role="alert" class="notice err" style="margin-top:14px" hidden></div>
-      <button class="btn primary full lg" id="analyzeBtn" style="margin-top:18px">Analyze Reel<i data-icon="arrow" data-size="18"></i></button>
-      <p class="muted" style="font-size:12px;text-align:center;margin-top:12px">Your video is processed securely and deleted right after analysis.</p>
+      <button class="btn primary full lg" id="analyzeBtn" style="margin-top:18px">Analyze<i data-icon="arrow" data-size="18"></i></button>
+      <p class="muted" style="font-size:12px;text-align:center;margin-top:12px">Videos are processed securely and deleted right after analysis.</p>
 
       <div class="run-state" id="runState">
         <div class="spinner"></div>
@@ -79,10 +76,10 @@
         <h2 class="h3">What can you analyze?</h2>
         <p>Reels, shorts, TikToks, food and travel videos, lifestyle content, comedy skits — anything up to a few minutes.</p>
         <ul class="side-list">
-          <li><span class="n">✓</span><span>16 emotion scores with a combined visual + audio view</span></li>
-          <li><span class="n">✓</span><span>Emotion timeline across the clip</span></li>
-          <li><span class="n">✓</span><span>Pacing, brightness and color insights</span></li>
-          <li><span class="n">✓</span><span>A wellbeing signal that flags emotionally heavy content</span></li>
+          <li><span class="n">✓</span><span>16 emotion scores, led by what the camera sees</span></li>
+          <li><span class="n">✓</span><span>Key moments from the clip and how the mood shifts</span></li>
+          <li><span class="n">✓</span><span>Photos too: post images get the same read</span></li>
+          <li><span class="n">✓</span><span>A wellbeing signal and a check for revealing footage</span></li>
         </ul>
       </div>
       <div class="card">

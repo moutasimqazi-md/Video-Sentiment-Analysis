@@ -60,7 +60,8 @@ NL.imp.habits = (() => {
     { id: "yt-views", platform: "YouTube", what: "Videos watched on a typical active day", bands: "< 15 fine · 15–40 · 40–80 · > 80" },
     { id: "night", platform: "Both", what: "Share of activity between midnight and 5am", bands: "< 5% fine · 5–10% · 10–15% · 15–25% · 25–35% · > 35%" },
     { id: "binge", platform: "Both", what: "Unusually heavy days (3× your normal, per 30 days)", bands: "< 0.5 fine · 0.5–2 · 2–5 · > 5" },
-    { id: "session", platform: "Both", what: "Longest unbroken run (10 min gap on Instagram, 30 min on YouTube)", bands: "Instagram: < 30 min fine · 30–60 · 60–120 · > 120. YouTube: < 60 · 60–120 · 120–240 · > 240" },
+    { id: "session-ig", platform: "Instagram", what: "Longest unbroken run (a gap of 10 minutes ends it)", bands: "< 30 min fine · 30–60 · 60–120 · > 120" },
+    { id: "session-yt", platform: "YouTube", what: "Longest unbroken run (a gap of 30 minutes ends it)", bands: "< 60 min fine · 60–120 · 120–240 · > 240" },
     { id: "variety", platform: "YouTube", what: "Share of videos from your 10 most-watched channels", bands: "< 50% fine · 50–70% · > 70%" },
     { id: "trend", platform: "Both", what: "Last 30 days vs the 30 before", bands: "< +40% fine · +40–100% · > +100%" },
     { id: "tone", platform: "Both", what: "Share of captions / titles with a heavy emotional tone", bands: "< 10% fine · 10–20% · 20–30% · > 30%" },
@@ -106,7 +107,7 @@ NL.imp.habits = (() => {
       const ns = main.nightShare, p = ns < 0.05 ? 0 : ns < 0.1 ? 4 : ns < 0.15 ? 8 : ns < 0.25 ? 14 : ns < 0.35 ? 20 : 25;
       add({ id: "night", severity: sev(p, 20, 8), title: p >= 8 ? "Late-night activity" : p ? "Some late-night activity" : "Little late-night activity", penalty: p, confidence: conf(main.n, main.days), basis: basis(main, mainName === "likes" ? "likes" : mainName === "stories" ? "stories" : "views"),
         text: `${pct(ns)}% of activity happens between midnight and 5am. The busiest hour is ${hourLabel(main.peakHour)}, and ${WD[main.peakWeekday]} is the busiest day.`,
-        tip: p ? "Set a wind-down time and use Sleep mode (Instagram) or Bedtime reminders (YouTube) so scrolling stops before sleep." : "A healthy pattern for sleep." });
+        tip: p ? `Set a wind-down time and use ${platform === "ig" ? "Sleep mode" : "Bedtime reminders"} so scrolling stops before sleep.` : "A healthy pattern for sleep." });
     }
     // binge days
     const bs = Object.entries(S).filter(([, v]) => v && v.days >= 7 && v.n >= 40);

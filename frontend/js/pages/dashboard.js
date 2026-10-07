@@ -18,13 +18,14 @@
   /* import prompt: invite to import, or link to the existing habits report */
   (function importCta() {
     const box = $("importCta"); if (!box) return;
-    const prof = ["me", ...NL.profiles.children().map((c) => c.id)].find((id) => NL.imp && NL.imp.store && NL.imp.store.getReport(id));
+    const found = NL.imp && NL.imp.store ? NL.imp.store.allReports() : [];
     box.hidden = false;
-    if (prof) {
-      const r = NL.imp.store.getReport(prof);
-      box.querySelector("h2").textContent = "Your habits report is ready";
-      box.querySelector("p").textContent = `Score ${r.overall.score ?? "–"}/100 · ${r.overall.label}. Imported ${NL.fmtDate(r.createdAt)}.`;
-      const a = box.querySelector("a.btn"); a.href = `habits.html?profile=${encodeURIComponent(prof)}`; a.lastChild.textContent = "Open report";
+    if (found.length) {
+      const { id, src, report: r } = found[0], plat = src === "ig" ? "Instagram" : "YouTube";
+      box.querySelector("h2").textContent = found.length > 1 ? "Your habits reports are ready" : `Your ${plat} habits report is ready`;
+      box.querySelector("p").textContent = found.length > 1 ? `${found.length} separate reports (${found.map((f) => (f.src === "ig" ? "Instagram" : "YouTube")).join(", ")}). Open one from your imports.` : `Score ${r.overall.score ?? "–"}/100 · ${r.overall.label}. Imported ${NL.fmtDate(r.createdAt)}.`;
+      const a = box.querySelector("a.btn");
+      a.href = found.length > 1 ? "import.html" : `habits.html?profile=${encodeURIComponent(id)}&src=${src}`; a.lastChild.textContent = found.length > 1 ? "Choose a report" : "Open report";
     }
   })();
 

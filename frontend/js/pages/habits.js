@@ -4,7 +4,8 @@
   const C = NL.charts, H = NL.imp.habits, S = NL.imp.store;
   const params = new URLSearchParams(location.search);
   const profile = params.get("profile") || "me";
-  const report = S.getReport(profile);
+  const src = params.get("src") && S.SRCS.includes(params.get("src")) ? params.get("src") : (S.sourcesFor(profile)[0] || "ig");
+  const report = S.getReport(profile, src);
   const esc = NL.esc;
 
   if (!report) { $("noReport").hidden = false; $("noReportCta").href = `import.html?profile=${encodeURIComponent(profile)}`; return; }
@@ -23,10 +24,11 @@
   const monthName = (k) => { const [y, m] = k.split("-").map(Number); return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: "short", year: "2-digit" }); };
   const cw = (el, max, min = 260) => Math.max(min, Math.min(max, Math.round(el.clientWidth || max)));
 
-  $("hbTitle").textContent = `${possessive} habits report`;
-  $("subjectLine").textContent = plats.map((p) => PLAT[p]).join(" + ");
+  $("hbTitle").textContent = `${possessive} ${PLAT[src]} habits report`;
+  const other = S.SRCS.filter((x) => x !== src && S.getReport(profile, x));
+  $("subjectLine").innerHTML = other.length ? `${PLAT[src]} only · <a href="habits.html?profile=${encodeURIComponent(profile)}&src=${other[0]}">Open the separate ${PLAT[other[0]]} report</a>` : `${PLAT[src]} only`;
   $("hbSub").textContent = `Imported ${NL.fmtDate(report.createdAt)}. Everything here was calculated in this browser.`;
-  document.title = `${possessive} habits report — NeuroLens`;
+  document.title = `${possessive} ${PLAT[src]} habits report — NeuroLens`;
   $("updateBtn").href = `import.html?profile=${encodeURIComponent(profile)}`;
 
   const announce = (t) => { $("hbStatus").textContent = t; };
@@ -34,7 +36,7 @@
 
   /* ---------- events (browse + deep check), loaded lazily ---------- */
   let eventsCache = null;
-  const loadEvents = async () => (eventsCache = eventsCache || (await S.getEvents(profile)));
+  const loadEvents = async () => (eventsCache = eventsCache || (async () => { const e = await S.getEvents(profile); return { ig: src === "ig" ? e.ig : [], yt: src === "yt" ? e.yt : [] }; })());
 
   /* ================= OVERVIEW ================= */
   function ring(score, level) {
@@ -53,7 +55,7 @@
       const d = O.score - report.prev.overall;
       cmp = `<p style="margin-top:10px"><span class="cmp ${d > 0 ? "up" : d < 0 ? "down" : "flat"}">${d > 0 ? "▲" : d < 0 ? "▼" : "•"} ${d === 0 ? "No change" : Math.abs(d) + " points"}</span> <span class="muted" style="font-size:13px">compared with your import on ${NL.fmtDate(report.prev.createdAt)}</span></p>`;
     }
-    const rules = H.RULES.map((r) => `<tr><td>${esc(r.platform)}</td><td>${esc(r.what)}</td><td>${esc(r.bands)}</td></tr>`).join("");
+    const rules = H.RULES.filter((r) => r.platform === PLAT[src] || r.platform === "Both").map((r) => `<tr><td>${esc(r.platform === "Both" ? PLAT[src] : r.platform)}</td><td>${esc(r.what)}</td><td>${esc(r.bands)}</td></tr>`).join("");
     const cover = plats.map((p) => {
       const lines = Object.entries(report.platforms[p].series).filter(([, s]) => s).map(([k, s]) => {
         const lbl = { likes: "likes", stories: "stories viewed", views: p === "ig" ? "reels & posts viewed" : "videos watched" }[k];
@@ -62,11 +64,11 @@
       return `<div><h3 class="ft" style="margin-bottom:6px">${PLAT[p]}</h3><ul class="side-list" style="margin:0;list-style:disc;padding-left:18px">${lines}</ul></div>`;
     }).join("");
     $("panel-overview").innerHTML = `
-      <section class="card verdict-card">${ring(O.score, O.level)}<div><span class="eyebrow">Overall</span><h2>${esc(O.label)}</h2><p>${esc(O.summary)}</p>
-        <div class="plat-scores">${plats.map(pill).join("")}</div>${cmp}</div></section>
+      <section class="card verdict-card">${ring(O.score, O.level)}<div><span class="eyebrow">${PLAT[src]}</span><h2>${esc(O.label)}</h2><p>${esc(O.summary)}</p>
+        ${cmp}</div></section>
       <div class="grid" style="margin-top:20px;gap:20px">
         ${plats.map((p) => card(`${PLAT[p]} · ${report.platforms[p].verdict.score}/100`, esc(report.platforms[p].verdict.label), report.platforms[p].verdict.findings.map(finding).join("") || `<p class="muted">Not enough history to judge.</p>`)).join("")}
-        ${card("What this covers", "the windows differ between exports", `<div class="grid c2" style="gap:18px">${cover}</div><p class="disclaimer">Each export covers a different period, so every finding says what it is based on. Instagram only exports about 7 days of watched reels; YouTube doesn't record watch time.</p>`)}
+        ${card("What this covers", "the period each part of the export covers", `<div class="grid c2" style="gap:18px">${cover}</div><p class="disclaimer">${src === "ig" ? "Every finding says what it is based on. Instagram only exports about 7 days of watched reels; likes can go back about a year." : "Every finding says what it is based on. YouTube history has no watch time, so it counts videos, not minutes."}</p>`)}
         ${card("How the verdict is calculated", "", `<details class="how-calc"><summary>See the rules and thresholds</summary><div class="table-wrap" tabindex="0" role="region" aria-label="Scoring rules (scrolls sideways on small screens)"><table class="rules"><thead><tr><th scope="col">Platform</th><th scope="col">What is measured</th><th scope="col">Bands</th></tr></thead><tbody>${rules}</tbody></table></div></details>
           <p class="disclaimer">The score starts at 100 and loses points for each pattern that crosses a threshold. It describes patterns in your history, not your wellbeing, and it is not a diagnosis. If something here worries you, talking to someone you trust helps more than any score.</p>`)}
         ${report.prev ? card("Since your last import", NL.fmtDate(report.prev.createdAt), prevTable()) : ""}
@@ -208,7 +210,7 @@
   }
 
   /* ---------- deep check: run a sample of links through the video analyzer ---------- */
-  const deepKey = "imp_deep_" + profile;
+  const deepKey = "imp_deep_" + profile + "_" + src;
   let deepRun = null;
   function renderDeep() {
     const box = $("deepBox"); if (!box) return;
@@ -368,7 +370,7 @@
   addEventListener("beforeprint", renderAll);
   $("deleteBtn").onclick = async () => {
     if (!confirm("Delete this imported data and report from this browser? Your video analyses in History are not affected.")) return;
-    await S.remove(profile); NL.store.del(deepKey); location.href = "import.html";
+    await S.remove(profile, src); NL.store.del(deepKey); location.href = "import.html";
   };
 
   /* redraw charts when the width changes (rotation / resize) */

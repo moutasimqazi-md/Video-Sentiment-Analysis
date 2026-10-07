@@ -350,3 +350,13 @@
   .toolbar #search { grid-column: 1 / -1; }
   .toolbar .btn { width: 100%; }
 }
+
+/* ---- results: confidence, key moments, visual check ---- */
+.conf { margin: 10px 2px 0; font-size: 14px; color: var(--muted); padding-left: 12px; border-left: 3px solid var(--border); }
+.conf.clear { border-color: var(--green); } .conf.leaning { border-color: #d99a1c; } .conf.mixed { border-color: var(--coral-ink); }
+.moments { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; }
+.moments.one { grid-template-columns: minmax(110px, 160px); margin-top: 12px; }
+.moments figure { margin: 0; }
+.moments img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 12px; background: var(--surface-2); display: block; }
+.moments figcaption { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+textarea.input { resize: vertical; min-height: 84px; font-family: inherit; }

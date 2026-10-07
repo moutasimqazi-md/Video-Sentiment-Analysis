@@ -63,6 +63,7 @@
     <div id="alertBox"></div>
 
     <div class="verdict" style="margin-top:20px" id="verdict"></div>
+    <p class="conf" id="conf" hidden></p>
 
     <div class="res-grid">
       <div class="grid" style="gap:20px">
@@ -77,7 +78,11 @@
           <div id="bars" aria-live="polite"></div>
           <button class="btn sm ghost no-print" id="moreBtn" style="margin-top:8px">Show all 16 emotions</button>
         </section>
-        <section class="card">
+        <section class="card" id="momentsCard" hidden>
+          <div class="card-head"><h3>Key moments</h3><span class="muted" style="font-size:12px">the frames that shaped this result</span></div>
+          <div class="moments" id="moments"></div>
+        </section>
+        <section class="card" id="timelineCard">
           <div class="card-head"><h3>Emotion timeline</h3><span class="muted" style="font-size:12px">top 3 emotions over time</span></div>
           <div id="chartWrap"></div>
           <div class="legend" id="legend"></div>
@@ -85,9 +90,12 @@
       </div>
 
       <div class="grid" style="gap:20px">
+        <section class="card" id="safetyCard" hidden><div class="card-head"><h3>Visual check</h3><span class="badge" id="safetyBadge"></span></div>
+          <p id="safetyText"></p><div class="moments one" id="safetyFrames"></div>
+          <p class="muted" style="font-size:12px;margin-top:12px">An automatic screen of the frames for revealing or suggestive content. It is strict, so everyday dance or swimwear footage can show up here. It can't judge context, captions or comments.</p></section>
         <section class="card" id="wbCard"><div class="card-head"><h3>Wellbeing signal</h3><span class="badge" id="wbBadge"></span></div>
           <p id="wbText" style="margin-bottom:10px"></p><div id="wbDrivers" class="chips"></div>
-          <p class="muted" style="font-size:12px;margin-top:12px">Based on emotional tone only. It can't detect explicit or unsafe content, captions or comments.</p></section>
+          <p class="muted" style="font-size:12px;margin-top:12px">Based on emotional tone only. It can't judge captions or comments.</p></section>
         <section class="card"><div class="card-head"><h3>Creator insights</h3></div><div id="insights"></div></section>
         <section class="card feedback no-print">
           <h3>Was this accurate?</h3>

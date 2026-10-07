@@ -11,6 +11,7 @@
   const r = entry.result;
   const labels = r.mood_labels;
   const audio = r.audio || { available: false };
+  const isImage = r.kind === "image";
   const isSample = entry.id === "sample";
   let source = "combined";
   let showAll = false;
@@ -23,8 +24,8 @@
 
   /* ---- header card ---- */
   const [topMood, topPct] = ranked("combined")[0];
-  $("title").textContent = entry.title || "Untitled video";
-  $("meta").textContent = `${NL.fmtDate(entry.createdAt)} · ${NL.fmtDuration(r.duration_seconds)} · ${r.frames_analyzed} frames analyzed`;
+  $("title").textContent = entry.title || (isImage ? "Untitled image" : "Untitled video");
+  $("meta").textContent = isImage ? `${NL.fmtDate(entry.createdAt)} · Image` : `${NL.fmtDate(entry.createdAt)} · ${NL.fmtDuration(r.duration_seconds)} · ${r.frames_analyzed} frames analyzed`;
   const th = $("thumb");
   th.innerHTML = `<span class="th-emoji">${NL.moodEmoji(topMood)}</span>` + (NL.thumbUrl(entry) ? `<img src="${NL.esc(NL.thumbUrl(entry))}" alt="" decoding="async" onerror="this.remove()">` : "");
   const watch = NL.watchLink(entry, { cls: "btn sm", text: `Watch the original ${NL.platform(entry) === "Instagram" ? "reel" : "video"}` });
@@ -35,6 +36,32 @@
   $("ringVal").textContent = topPct.toFixed(1) + "%";
   requestAnimationFrame(() => { $("ringArc").style.strokeDashoffset = 326.7 * (1 - Math.min(topPct, 100) / 100); });
   $("verdict").innerHTML = NL.icon("sparkle", 18) + `<span>${NL.esc(r.verdict || "")}</span>`;
+  if (r.confidence) {
+    const c = r.confidence, el = $("conf");
+    el.hidden = false;
+    el.className = "conf " + c.level;
+    el.textContent = c.level === "clear" ? "A clear read: one mood stands well ahead of the rest."
+      : c.level === "leaning" ? "Leaning " + topMood + ", with other moods close behind."
+      : "A mixed read: several moods score about the same, so treat the top result as a starting point.";
+  }
+
+  /* ---- key moments + visual check (evidence frames saved with the analysis) ---- */
+  const kfs = (r.keyframes || []).filter((k) => !k.flag);
+  if (kfs.length) {
+    $("momentsCard").hidden = false;
+    $("moments").innerHTML = kfs.map((k) => `<figure><img src="${NL.esc(NL.api.url(k.url))}" alt="Frame at ${k.t} seconds, reading as ${NL.esc(k.mood || topMood)}" loading="lazy" decoding="async" onerror="this.closest('figure').remove()"><figcaption>${isImage ? "" : k.t + "s · "}${NL.cap(k.mood || topMood)}</figcaption></figure>`).join("");
+  }
+  const sf = r.safety;
+  if (sf && sf.checked) {
+    $("safetyCard").hidden = false;
+    const flagged = sf.flags && sf.flags.length;
+    $("safetyBadge").className = "badge " + (flagged ? "amber" : "green");
+    $("safetyBadge").textContent = flagged ? "Worth a look" : "Nothing flagged";
+    $("safetyText").textContent = flagged
+      ? `${sf.flags[0].label} showed up in ${sf.flags[0].frames} of ${sf.flags[0].of} frames checked. Review the frame below and decide for yourself.`
+      : `We checked ${sf.frames_checked} ${sf.frames_checked === 1 ? "frame" : "frames"} and found nothing that looked revealing.`;
+    $("safetyFrames").innerHTML = (r.keyframes || []).filter((k) => k.flag).map((k) => `<figure><img src="${NL.esc(NL.api.url(k.url))}" alt="Flagged frame at ${k.t} seconds" loading="lazy" onerror="this.closest('figure').remove()"><figcaption>${isImage ? "Flagged frame" : k.t + "s"}</figcaption></figure>`).join("");
+  }
   if (isSample) $("subtitle").textContent = "This is a built-in sample report — analyze your own video to get real results.";
 
   /* ---- wellbeing + danger alert ---- */
@@ -52,17 +79,26 @@
   }
   if (forChild) $("subtitle").textContent = `Reviewed for ${NL.profiles.name(entry.profileId)}.`;
 
+  if (isImage) {
+    $("timelineCard").hidden = true;
+    $("srcChips").hidden = true;
+    $("subtitle").textContent = "Here's what the image shows.";
+  }
   /* ---- stat tiles ---- */
   const cm = r.color_metrics || {};
   const cuts = cm.cuts_per_minute || 0;
   const pace = cuts < 12 ? "Slow" : cuts < 30 ? "Medium" : "Fast";
   const topVisual = Object.entries(r.visual_averages || r.averages).sort((a, b) => b[1] - a[1])[0][0];
-  $("stats").innerHTML = [
+  $("stats").innerHTML = (isImage ? [
+    ["eye", "Visual vibe", NL.cap(topVisual), ""],
+    ["sun", "Brightness", (cm.avg_brightness ?? 0) + "%", ""],
+    ["palette", "Color richness", (cm.avg_saturation ?? 0) + "%", ""],
+  ] : [
     ["eye", "Visual vibe", NL.cap(topVisual), ""],
     ["music", "Audio vibe", audio.available ? NL.cap(audio.dominant) : "No audio", ""],
     ["gauge", "Pacing", pace, ` <em>${cuts}/min</em>`],
     ["sun", "Brightness", (cm.avg_brightness ?? 0) + "%", ""],
-  ].map(([i, k, v, x]) => `<div class="stat"><small>${NL.icon(i, 14)}${k}</small><b>${NL.esc(v)}${x}</b></div>`).join("");
+  ]).map(([i, k, v, x]) => `<div class="stat"><small>${NL.icon(i, 14)}${k}</small><b>${NL.esc(v)}${x}</b></div>`).join("");
 
   /* ---- emotion bars ---- */
   function renderBars() {
@@ -80,7 +116,7 @@
     $("srcNote").textContent =
       source === "visual" ? "From the video frames only."
       : source === "audio" ? `From the soundtrack only · ${audio.windows_analyzed} clips · loudness ${audio.loudness_db} dB.`
-      : audio.available ? `60% visual + 40% audio · loudness ${audio.loudness_db} dB.`
+      : audio.available ? `Mostly from what the camera sees, with the soundtrack as a supporting signal · loudness ${audio.loudness_db} dB.`
       : `Visual only — ${audio.reason || "audio unavailable"}.`;
   }
   document.querySelectorAll("#srcChips .chip").forEach((c) => {
@@ -128,8 +164,8 @@
   const bright = cm.avg_brightness ?? 50, sat = cm.avg_saturation ?? 50;
   const insights = [
     ["palette", "coral", "Visuals", `${bright > 65 ? "Bright" : bright < 35 ? "Dark, moody" : "Balanced"} lighting with ${sat > 60 ? "rich, vivid" : sat < 30 ? "muted" : "natural"} color. Looks ${topVisual}.`],
-    ["music", "blue", "Audio", audio.available ? `The soundtrack feels ${audio.dominant} at ${audio.loudness_db} dB.` : `No audio analyzed (${audio.reason || "unavailable"}).`],
-    ["bolt", "amber", "Pacing", `${cuts} cuts per minute — ${pace.toLowerCase()} pacing. ${pace === "Fast" ? "Great for holding attention; leave a beat on your key shot." : pace === "Slow" ? "Calm and cinematic; consider a tighter hook in the first 2 seconds." : "A comfortable rhythm for most feeds."}`],
+    ...(isImage ? [] : [["music", "blue", "Audio", audio.available ? `The soundtrack feels ${audio.dominant} at ${audio.loudness_db} dB.` : `No audio analyzed (${audio.reason || "unavailable"}).`],
+    ["bolt", "amber", "Pacing", `${cuts} cuts per minute — ${pace.toLowerCase()} pacing. ${pace === "Fast" ? "Great for holding attention; leave a beat on your key shot." : pace === "Slow" ? "Calm and cinematic; consider a tighter hook in the first 2 seconds." : "A comfortable rhythm for most feeds."}`]]),
     ["target", "green", "Overall response", `Viewers are most likely to feel ${topMood} (${topPct.toFixed(0)}%). ${topPct > 50 ? "A very clear, focused vibe." : "The vibe is mixed — pick one emotion to lean into."}`],
   ];
   $("insights").innerHTML = insights.map(([i, c, t, d]) => `<div class="insight"><div class="ico ${c === "coral" ? "" : c}">${NL.icon(i, 18)}</div><div><b>${t}</b><span>${NL.esc(d)}</span></div></div>`).join("");

@@ -10,12 +10,14 @@ import torch
 from transformers import CLIPModel, CLIPProcessor
 from PIL import Image
 
+from neurolens import calibration, safety
+
 _model = None
 _processor = None
 _text_embeds = None
 _load_lock = threading.Lock()
 
-VISUAL_WEIGHT = 0.6  # audio gets the remaining 0.4 when the video has usable sound
+VISUAL_WEIGHT = 0.8  # audio gets the remaining 0.2 when the video has usable sound (audio alone was 28% accurate vs 60% for visuals)
 torch.set_num_threads(os.cpu_count() or 4)  # torch defaults to physical cores; all threads is ~1.5x faster here
 
 MIN_FRAMES = 12
@@ -218,6 +220,8 @@ def warm_up():
     """Load both models and run one tiny inference each, so the first real request is fast."""
     model, processor = _load_model()
     _category_text_embeddings()
+    calibration.rebuild(list(CATEGORY_PROMPTS))
+    safety.warm_up()
     with torch.no_grad():
         dummy = Image.fromarray(np.zeros((224, 224, 3), np.uint8))
         _image_embedding(model, processor(images=[dummy], return_tensors="pt"))
@@ -227,6 +231,80 @@ def warm_up():
         audio_analyzer.warm_up()
     except Exception as e:
         print(f"audio warm-up skipped: {e}")
+
+
+def _views(frame_bgr):
+    """Square views of a frame. CLIP centre-crops to a square, which throws away the top and bottom of a vertical Reel,
+    so tall/wide frames are scored as three squares (start / middle / end) and averaged. Offline: +3 pts accuracy."""
+    h, w = frame_bgr.shape[:2]
+    rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+    if h > w * 1.15:
+        s, off = w, (h - w) // 2
+        crops = [rgb[0:s], rgb[off:off + s], rgb[h - s:h]]
+    elif w > h * 1.15:
+        s, off = h, (w - h) // 2
+        crops = [rgb[:, 0:s], rgb[:, off:off + s], rgb[:, w - s:w]]
+    else:
+        crops = [rgb]
+    return [Image.fromarray(np.ascontiguousarray(c)) for c in crops]
+
+
+def encode_frames(frames_bgr, report=None):
+    """Unit-length embedding per frame (average of its square views). Returns an (n, D) float32 array."""
+    model, processor = _load_model()
+    out = []
+    with torch.inference_mode():
+        for i in range(0, len(frames_bgr), 6):
+            chunk = frames_bgr[i : i + 6]
+            views = [_views(f) for f in chunk]
+            flat = [v for vs in views for v in vs]
+            feats = _image_embedding(model, processor(images=flat, return_tensors="pt"))
+            feats = (feats / feats.norm(dim=-1, keepdim=True)).numpy()
+            k = 0
+            for vs in views:
+                m = feats[k : k + len(vs)].mean(axis=0)
+                out.append(m / np.linalg.norm(m))
+                k += len(vs)
+            if report:
+                report(min(i + 6, len(frames_bgr)), len(frames_bgr))
+    return np.stack(out).astype(np.float32)
+
+
+def score_embeddings(emb):
+    """Per-frame mood probabilities (n, K): zero-shot text prompts, nudged by what your ratings taught the model."""
+    text = _category_text_embeddings()
+    T = torch.stack([text[c] for c in CATEGORY_PROMPTS]).numpy()
+    logits = calibration.adjust(100 * emb @ T.T, emb)
+    logits = logits - logits.max(axis=1, keepdims=True)
+    e = np.exp(logits)
+    return e / e.sum(axis=1, keepdims=True)
+
+
+def _confidence(averages):
+    ranked = sorted(averages.values(), reverse=True)
+    margin = ranked[0] - ranked[1]
+    level = "clear" if margin >= 12 else "leaning" if margin >= 5 else "mixed"
+    return {"level": level, "margin": round(margin, 1)}
+
+
+def _pick_keyframes(frames, probs, categories, dominant, count=4):
+    """Frames that best show the verdict, spread across the video. Each is (seconds, jpeg bytes, mood, score)."""
+    j = categories.index(dominant)
+    order = np.argsort(-probs[:, j])
+    chosen = []
+    min_gap = max(1, len(frames) // (count + 1))
+    for idx in order:
+        if all(abs(int(idx) - c) >= min_gap for c in chosen):
+            chosen.append(int(idx))
+        if len(chosen) == count:
+            break
+    out = []
+    for idx in sorted(chosen):
+        ok, buf = cv2.imencode(".jpg", frames[idx][1], [cv2.IMWRITE_JPEG_QUALITY, 82])
+        if ok:
+            top = categories[int(np.argmax(probs[idx]))]
+            out.append({"t": round(frames[idx][0], 1), "jpg": buf.tobytes(), "mood": top, "score": round(float(probs[idx, j]) * 100, 1)})
+    return out
 
 
 def _color_metrics(frame_bgr):
@@ -262,9 +340,8 @@ def analyze_video(video_path, max_frames=MAX_FRAMES, progress=None):
 
     report("Getting ready", 0.02)
     model, processor = _load_model()
-    text_embeds = _category_text_embeddings()
+    _category_text_embeddings()
     categories = list(CATEGORY_PROMPTS.keys())
-    text_matrix = torch.stack([text_embeds[c] for c in categories])
 
     report("Reading video frames", 0.06)
     frames, duration, fps = sample_frames(video_path, max_frames=max_frames)
@@ -272,27 +349,12 @@ def analyze_video(video_path, max_frames=MAX_FRAMES, progress=None):
         raise ValueError("Could not read any frames from this video")
 
     n = len(frames)
-    prob_chunks = []
-    feat_chunks = []
-    with torch.inference_mode():
-        for i in range(0, n, CLIP_BATCH):
-            imgs = [
-                Image.fromarray(cv2.cvtColor(f, cv2.COLOR_BGR2RGB))
-                for _, f in frames[i : i + CLIP_BATCH]
-            ]
-            feats = _image_embedding(model, processor(images=imgs, return_tensors="pt"))
-            feats = feats / feats.norm(dim=-1, keepdim=True)
-            prob_chunks.append(torch.softmax(feats @ text_matrix.T * 100, dim=-1).clone())
-            feat_chunks.append(feats.clone())
-            done = min(i + CLIP_BATCH, n)
-            report(f"Scoring frames ({done}/{n})", 0.12 + 0.6 * done / n)
-    probs = torch.cat(prob_chunks).numpy()
+    emb = encode_frames([f for _, f in frames], lambda done, tot: report(f"Scoring frames ({done}/{tot})", 0.12 + 0.6 * done / tot))
+    probs = score_embeddings(emb)
 
-    # Mean embedding across frames: the raw feature a future fine-tuned classifier
-    # would train on, as opposed to `probs` above which is already biased by our
-    # hand-written prompts. Kept out of the API response (see main.py's _finish).
-    mean_visual_embedding = torch.cat(feat_chunks).mean(dim=0)
-    mean_visual_embedding = (mean_visual_embedding / mean_visual_embedding.norm()).tolist()
+    # Mean embedding across frames: what the rating-based calibration learns from (kept out of the API response, see main.py's _finish).
+    mean_visual_embedding = emb.mean(axis=0)
+    mean_visual_embedding = (mean_visual_embedding / np.linalg.norm(mean_visual_embedding)).tolist()
 
     thumbnail_jpg = None
     if frames:
@@ -355,7 +417,20 @@ def analyze_video(video_path, max_frames=MAX_FRAMES, progress=None):
             f"visuals look {max(visual, key=visual.get)}."
         )
 
+    report("Checking the visuals", 0.9)
+    screening = safety.screen(frames)
+    keyframes = _pick_keyframes(frames, probs, categories, dominant)
+    for f in screening["flags"]:  # show the frame that triggered each flag
+        ok, buf = cv2.imencode(".jpg", frames[f["frame_index"]][1], [cv2.IMWRITE_JPEG_QUALITY, 82])
+        if ok:
+            keyframes.append({"t": f["t"], "jpg": buf.tobytes(), "mood": None, "score": f["score"], "flag": f["type"]})
+            f["keyframe"] = len(keyframes) - 1
+        f.pop("frame_index", None)
+
     return {
+        "kind": "video",
+        "confidence": _confidence(averages),
+        "safety": screening,
         "duration_seconds": round(duration, 1),
         "frames_analyzed": len(frames),
         "timeline": timeline,
@@ -375,4 +450,54 @@ def analyze_video(video_path, max_frames=MAX_FRAMES, progress=None):
             "audio": audio.get("embedding"),
         },
         "_thumbnail_jpg": thumbnail_jpg,
+        "_keyframes": keyframes,
+    }
+
+
+def analyze_image(image_path, progress=None):
+    """A single photo/post. Same mood scoring as video (three square views for tall or wide images), no timeline or audio."""
+    report = progress or (lambda stage, frac: None)
+    report("Getting ready", 0.05)
+    _load_model()
+    _category_text_embeddings()
+    categories = list(CATEGORY_PROMPTS.keys())
+    data = np.fromfile(image_path, dtype=np.uint8)
+    img = cv2.imdecode(data, cv2.IMREAD_COLOR)
+    if img is None:
+        raise ValueError("Could not read this image")
+    img = _shrink(img)
+    report("Looking at the image", 0.4)
+    emb = encode_frames([img])
+    probs = score_embeddings(emb)[0]
+    averages = {c: round(float(probs[i]) * 100, 1) for i, c in enumerate(categories)}
+    dominant = max(averages, key=averages.get)
+    b, s = _color_metrics(img)
+    ranked = sorted(averages, key=averages.get, reverse=True)
+    verdict = (
+        f"This image reads as {dominant} — {MOOD_LABELS[dominant]} ({averages[dominant]:.0f}%). "
+        f"Next strongest vibes: {', '.join(f'{m} {averages[m]:.0f}%' for m in ranked[1:3])}."
+    )
+    ok, buf = cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 85])
+    jpg = buf.tobytes() if ok else None
+    screening = safety.screen([(0.0, img)])
+    for f in screening["flags"]:
+        f.pop("frame_index", None)
+    report("Writing the verdict", 0.97)
+    return {
+        "kind": "image",
+        "safety": screening,
+        "confidence": _confidence(averages),
+        "duration_seconds": 0,
+        "frames_analyzed": 1,
+        "timeline": [],
+        "averages": averages,
+        "visual_averages": dict(averages),
+        "audio": {"available": False, "reason": "images have no sound"},
+        "dominant_mood": dominant,
+        "color_metrics": {"avg_brightness": round(b * 100, 1), "avg_saturation": round(s * 100, 1), "cuts_per_minute": 0},
+        "verdict": verdict,
+        "mood_labels": MOOD_LABELS,
+        "_embeddings": {"visual": emb[0].tolist(), "audio": None},
+        "_thumbnail_jpg": jpg,
+        "_keyframes": [],
     }

@@ -44,6 +44,8 @@
         <a class="brand" href="${root}index.html" aria-label="NeuroLens home">${BRAND}</a>
         <nav class="nav-links" aria-label="Main">${nav}</nav>
         <div class="nav-right">
+          <div class="menu-wrap" id="jobsWrap" hidden><button class="icon-btn" id="jobsBtn" aria-label="Analyses" aria-haspopup="true" aria-expanded="false" aria-controls="jobsPanel">${NL.icon("bolt", 18)}<span class="jobs-badge" id="jobsBadge" hidden></span></button>
+            <div class="dropdown jobs-panel" id="jobsPanel" role="region" aria-label="Analyses in progress"></div></div>
           <button class="icon-btn" id="themeBtn" aria-label="Dark mode" aria-pressed="${theme === "dark"}">${NL.icon(theme === "dark" ? "sun" : "moon", 18)}</button>
           ${right}
           <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false" aria-controls="mobileNav">${NL.icon("menu", 20)}</button>
@@ -193,4 +195,14 @@
     els.forEach((e) => io.observe(e));
   };
   NL.observeReveal();
+
+  /* background analyses: load the queue + header tray on every page that has the header */
+  (function loadJobs() {
+    const load = (src) => new Promise((ok) => { const el = document.createElement("script"); el.src = root + src; el.onload = ok; el.onerror = ok; document.head.appendChild(el); });
+    (async () => {
+      if (!NL.api) await load("js/core/api.js");
+      if (!NL.jobs) await load("js/core/jobs.js");
+      if (!NL.jobTray) await load("js/core/jobtray.js");
+    })();
+  })();
 })();

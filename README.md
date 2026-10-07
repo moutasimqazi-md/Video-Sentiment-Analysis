@@ -36,11 +36,20 @@ Restart/crash logs go to `backend/data/*_restarts.log`.
 
 Without the backend, open `frontend/index.html` and use "See sample report" to preview the results page.
 
+## The analysis engine (backend)
+Videos and images are scored on what the camera sees; sound is a supporting signal (20%), captions play no part in a result.
+- **Frames:** 12–40 frames per video, each scored as three square views (start/middle/end of a tall frame) so vertical Reels aren't cropped to their centre. Images get the same treatment. `neurolens/analyzer.py`.
+- **Learns from your ratings:** every "Spot on" / correction becomes a labelled example; the engine blends per-mood averages of those examples into its scores and rebuilds after each rating (`neurolens/calibration.py`; ~64% → ~73% accuracy in leave-one-out tests). `GET /api/model/info` shows whether it's active.
+- **Evidence:** each result carries a confidence level (clear / leaning / mixed), up to four key-moment frames (`/api/keyframes/{job}/{n}.jpg`) and a visual check for revealing or suggestive footage with the flagged frame (`neurolens/safety.py`). The check is strict, so everyday dance or swimwear footage can trip it; it flags for a human to look, it does not call anything explicit. Violence, weapons and drugs are not detected.
+- **Images:** `.jpg`, `.jpeg`, `.png`, `.webp` upload through the same `/api/analyze` and return `kind: "image"` (no timeline or audio).
+- **Background queue:** the site runs analyses in the background (`js/core/jobs.js`, tray in the header), so you can add up to 10 links or files and keep browsing.
+- Offline experiments live in `backend/eval/` (`pip install -r backend/requirements-dev.txt`).
+
 ## Design system
 Light-first theme (dark mode via the header toggle) with tokens in `css/base.css`: coral/blue palette, Inter + Plus Jakarta Sans, an AA-contrast `--coral-ink` for text, spacing scale, shadows and a focus ring. Icons are inline SVG (`js/core/icons.js`, use `<i data-icon="name">`). Sections fade in on scroll (`.reveal`) and respect `prefers-reduced-motion`.
 
 ## Import your Instagram & YouTube history
-`pages/import.html` reads Instagram's "Download your information" ZIP and Google Takeout (YouTube) ZIPs, folders or loose JSON/CSV files **in the browser** (nothing is uploaded; messages and personal details are never opened). `pages/habits.html` turns them into a habits report: a 0–100 score and verdict with transparent rules, when/how much charts, content themes (keyword estimate from captions and titles), an optional video check of a sample of links through the analyzer, a browsable item list, CSV and print.
+`pages/import.html` reads Instagram's "Download your information" ZIP and Google Takeout (YouTube) ZIPs, folders or loose JSON/CSV files **in the browser** (nothing is uploaded; messages and personal details are never opened). `pages/habits.html` turns each platform into its own separate habits report (Instagram and YouTube are never combined into one score; a previous combined report is split automatically): a 0–100 score and verdict with transparent rules, when/how much charts, content themes (keyword estimate from captions and titles), an optional video check of a sample of links through the analyzer, a browsable item list, CSV and print.
 - Code: `js/core/zip.js` (streaming ZIP reader, ZIP64), `js/core/imports/` (`parse.js` adapters, `habits.js` analysis + judgement, `themes.js` + `js/data/lexicon.js`, `store.js` IndexedDB + localStorage).
 - Instagram exports only about 7 days of watched reels; likes can go back a year. YouTube history has titles and channels but no watch time. Both are stated in the UI.
 - Personal exports are git-ignored (`*.zip`, `instagram-*/`, `Takeout/`). Never commit them.
