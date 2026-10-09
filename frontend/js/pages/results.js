@@ -1,9 +1,19 @@
 /* Results page: renders one saved analysis (or the built-in sample). */
-(() => {
+(async () => {
   const $ = (id) => document.getElementById(id);
   const root = document.body.dataset.root;
   const id = new URLSearchParams(location.search).get("id");
-  const entry = id === "sample" ? NL.SAMPLE : NL.history.get(id);
+  let entry = id === "sample" ? NL.SAMPLE : NL.history.get(id);
+  if (!entry && /^[0-9a-f]{32}$/.test(id || "")) {
+    // an item found by a feed check lives on the server, not in this browser's history
+    try {
+      const r = await fetch(NL.api.url(`api/results/${id}`), { headers: { "ngrok-skip-browser-warning": "1" } });
+      if (r.ok) {
+        const { result } = await r.json();
+        entry = { id, createdAt: Date.now(), result, title: (result.source && result.source.title) || "Item from a feed check", source: result.source || {}, profileId: "me", kindOfMedia: result.kind || "video" };
+      }
+    } catch (e) { /* falls through to "not found" */ }
+  }
 
   if (!entry) { $("missing").hidden = false; return; }
   $("report").hidden = false;

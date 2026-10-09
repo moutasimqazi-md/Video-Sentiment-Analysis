@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Feed check — NeuroLens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="../assets/img/favicon-48.png">
+<link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<meta name="theme-color" content="#fcfaf8">
+<link rel="stylesheet" href="../css/base.css">
+<link rel="stylesheet" href="../css/components.css">
+<link rel="stylesheet" href="../css/pages.css">
+<link rel="stylesheet" href="../css/dashboard.css">
+<link rel="stylesheet" href="../css/feed.css">
+</head>
+<body data-root="../" data-active="dashboard" data-shell="app" data-nav="feed">
+<a class="skip" href="#main">Skip to content</a>
+<div id="site-header"></div>
+
+<main class="container page" id="main" tabindex="-1">
+  <header class="fk-hero">
+    <div>
+      <span class="badge"><i data-icon="eye" data-size="14"></i>Feed check</span>
+      <h1>See what an Instagram feed is really showing</h1>
+      <p>Sign in once, privately, right here. NeuroLens looks at what the account is being served, checks each reel and post, and writes you a short report. For a child's account it can keep watching and alert you.</p>
+    </div>
+    <ul class="fk-points" aria-label="How it protects you">
+      <li><i data-icon="lock" data-size="18"></i><div><b>Private browser</b><small>You sign in inside an isolated browser. Your password never reaches NeuroLens.</small></div></li>
+      <li><i data-icon="shield" data-size="18"></i><div><b>Only with consent</b><small>A child's account needs your confirmation that they know.</small></div></li>
+      <li><i data-icon="bell" data-size="18"></i><div><b>Alerts that matter</b><small>Heavy tone or revealing content, with the frame as evidence.</small></div></li>
+    </ul>
+  </header>
+
+  <section class="card fk-lock" id="pairCard" hidden>
+    <div class="fk-lock-ico"><i data-icon="lock" data-size="26"></i></div>
+    <div>
+      <h2 class="h3">This browser isn't connected yet</h2>
+      <p>These tools can open Instagram sessions, so they only work for you. On the computer running NeuroLens there is nothing to do. On this device, open Feed check on that computer, choose <b>Use on another device</b>, and open the link it makes (single use, valid 10 minutes).</p>
+      <p class="err-text" id="pairErr" role="alert" hidden></p>
+    </div>
+  </section>
+
+  <div id="feedApp" hidden>
+    <ol class="fk-stepper" id="stepper" aria-label="Progress"></ol>
+
+    <div class="fk-grid">
+      <div class="fk-main">
+
+        <!-- sign in -->
+        <section class="card fk-stage" id="stageConnect" aria-labelledby="connHead">
+          <div id="connIdle">
+            <div class="fk-art" aria-hidden="true"><span class="fk-orb"></span><span class="fk-orb b"></span><i data-icon="instagram" data-size="40"></i></div>
+            <h2 class="h3" id="connHead">Sign in to Instagram, privately</h2>
+            <p class="muted" id="sessHelp"></p>
+            <ul class="fk-ticks">
+              <li><i data-icon="check" data-size="16"></i>A private browser opens in this page, not in a new window or tab.</li>
+              <li><i data-icon="check" data-size="16"></i>You type your login straight into Instagram. We never see it.</li>
+              <li><i data-icon="check" data-size="16"></i>It closes by itself once you're in. Disconnect any time to delete the session.</li>
+            </ul>
+            <button class="btn primary lg" id="loginBtn"><i data-icon="instagram" data-size="18"></i>Open private browser</button>
+            <p class="status-line" id="loginStatus" role="status" aria-live="polite"></p>
+          </div>
+
+          <div class="rb" id="rb" hidden>
+            <div class="rb-bar">
+              <span class="rb-lock"><i data-icon="lock" data-size="14"></i></span>
+              <span class="rb-host" id="rbHost">instagram.com</span>
+              <span class="rb-pill"><i data-icon="shield" data-size="12"></i>Private browser</span>
+              <button class="btn sm ghost" id="rbCancel" type="button">Cancel</button>
+            </div>
+            <div class="rb-screen" id="rbScreen">
+              <canvas id="rbCanvas" tabindex="0" aria-label="Private browser showing Instagram. Click and type here to sign in."></canvas>
+              <div class="rb-overlay" id="rbOverlay" role="status" aria-live="polite"><div class="spinner"></div><span id="rbOverlayText">Starting the private browser…</span></div>
+            </div>
+            <p class="rb-hint" id="rbHint" role="status" hidden></p>
+            <textarea class="rb-keys" id="rbKeys" aria-label="Keyboard input for the private browser" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
+            <p class="rb-note"><i data-icon="lock" data-size="14"></i>Type your username and password in the browser above. They go straight to Instagram, and NeuroLens never sees them.</p>
+          </div>
+        </section>
+
+        <!-- run a check -->
+        <section class="card fk-stage" id="scanCard" aria-labelledby="scanHead" hidden>
+          <div class="fk-conn">
+            <span class="fk-conn-ok"><span class="dot on" aria-hidden="true"></span><b id="sessText">Instagram connected</b></span>
+            <button class="btn sm ghost" id="logoutBtn" type="button">Disconnect</button>
+          </div>
+          <h2 class="h3" id="scanHead">What should we check?</h2>
+          <fieldset class="kinds">
+            <legend class="sr-only">What to check</legend>
+            <label class="kind"><input type="radio" name="kind" value="explore" checked><span class="kind-ico"><i data-icon="compass" data-size="20"></i></span><span><b>Explore</b><small>What Instagram suggests to this account</small></span></label>
+            <label class="kind"><input type="radio" name="kind" value="foryou"><span class="kind-ico"><i data-icon="film" data-size="20"></i></span><span><b>For You reels</b><small>The reels feed, scrolled a few times</small></span></label>
+            <label class="kind"><input type="radio" name="kind" value="terms"><span class="kind-ico"><i data-icon="search" data-size="20"></i></span><span><b>Search topics</b><small>Top posts for topics you enter</small></span></label>
+            <label class="kind"><input type="radio" name="kind" value="profile"><span class="kind-ico"><i data-icon="chart" data-size="20"></i></span><span><b>Account review</b><small>How the account's own posts come across</small></span></label>
+          </fieldset>
+          <div class="field" id="termsRow" hidden><label for="termsIn">Topics (comma separated, up to 5)</label><input class="input" id="termsIn" placeholder="fitness, cooking, travel"></div>
+          <div class="field"><label for="limitSel">How many items</label>
+            <select class="input" id="limitSel"><option value="6">6 (quick)</option><option value="10" selected>10</option><option value="16">16</option><option value="24">24</option></select></div>
+          <p class="muted note">This shows what Instagram <b>serves</b> the account, not what was actually watched. Scrolling For You counts as viewing those reels, so it can nudge that account's recommendations.</p>
+          <p class="err-text" id="scanErr" role="alert" hidden></p>
+          <button class="btn primary lg" id="scanBtn">Run check<i data-icon="arrow" data-size="18"></i></button>
+          <div class="run-state" id="scanRun">
+            <div class="spinner"></div><div class="stage" id="scanStage" aria-live="polite">Starting…</div>
+            <div class="progress" role="progressbar" aria-label="Check progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="scanProg" style="margin:10px 0"><i id="scanBar"></i></div>
+          </div>
+        </section>
+
+        <!-- report -->
+        <section id="reportBox" hidden aria-labelledby="repHead">
+          <div class="card report-card">
+            <div class="card-head"><h2 class="h3" id="repHead">Report</h2><span class="muted" id="repMeta"></span></div>
+            <div class="rep-top">
+              <div class="rep-ring" id="repRing" role="img" aria-label="Items checked"></div>
+              <ul class="rep-lines" id="repLines"></ul>
+            </div>
+            <div id="repReview" class="rep-review" hidden><h3 class="h-card">Account review</h3><ul id="repReviewList"></ul></div>
+            <div id="repMoods" class="rep-moods" aria-label="Mood mix"></div>
+            <div class="no-print rep-actions"><button class="btn sm" id="repPrint"><i data-icon="download" data-size="16"></i>Save as PDF</button></div>
+          </div>
+          <h3 class="h-card" style="margin:22px 0 12px">What was checked</h3>
+          <div class="feed-grid" id="repItems"></div>
+          <p class="muted" id="repFailed" hidden></p>
+        </section>
+      </div>
+
+      <aside class="fk-side">
+        <section class="card" aria-labelledby="whoHead">
+          <h2 class="h-card" id="whoHead">Whose account?</h2>
+          <div class="field" style="margin:10px 0 0"><label class="sr-only" for="whoSel">Account</label><select class="input" id="whoSel"></select></div>
+          <div id="childBox" class="child-box" hidden>
+            <label class="check"><input type="checkbox" id="consentBox"> <span><b id="consentName">My child</b> knows I check what their Instagram shows. I'll talk with them about it.</span></label>
+            <label class="check"><input type="checkbox" id="monOn"> <span>Check automatically and alert me</span></label>
+            <div class="field"><label for="monEvery">How often</label>
+              <select class="input" id="monEvery"><option value="30">Every 30 minutes</option><option value="60">Every hour</option><option value="120" selected>Every 2 hours</option><option value="360">Every 6 hours</option><option value="1440">Once a day</option></select></div>
+            <p class="status-line"><span class="badge green" id="monBadge" hidden>Monitoring on</span> <span id="monStatus" class="muted"></span></p>
+            <button class="btn sm" id="monSave">Save monitoring settings</button>
+          </div>
+        </section>
+
+        <section class="card" id="alertsCard" hidden aria-labelledby="alHead">
+          <h2 class="h-card" id="alHead">Recent alerts</h2>
+          <div id="alertList"></div>
+        </section>
+
+        <section class="card" id="pastCard" hidden aria-labelledby="pastHead">
+          <h2 class="h-card" id="pastHead">Earlier checks</h2>
+          <div id="pastList" class="past-list"></div>
+        </section>
+
+        <section class="card" id="otherCard" hidden aria-labelledby="otherHead">
+          <h2 class="h-card" id="otherHead">Use on another device</h2>
+          <p class="muted" style="margin:6px 0 12px;font-size:14px">Make a one-time link, then open it on your phone. That device stays connected.</p>
+          <button class="btn sm" id="otherBtn">Make a link</button>
+          <div id="otherOut" hidden class="pair-out"><label for="otherLink">Link (works once, expires in 10 minutes)</label>
+            <div class="pair-row"><input class="input" id="otherLink" readonly><button class="btn primary sm" id="otherCopy">Copy</button></div>
+            <p class="muted" id="otherNote" style="font-size:13px"></p></div>
+        </section>
+      </aside>
+    </div>
+  </div>
+</main>
+
+<div id="site-footer"></div>
+<script src="../js/core/moods.js"></script>
+<script src="../js/core/store.js"></script>
+<script src="../js/core/api.js"></script>
+<script src="../js/core/wellbeing.js"></script>
+<script src="../js/core/icons.js"></script>
+<script src="../js/core/layout.js"></script>
+<script src="../js/core/owner.js"></script>
+<script src="../js/core/browserview.js"></script>
+<script src="../js/pages/feed.js"></script>
+</body>
+</html>

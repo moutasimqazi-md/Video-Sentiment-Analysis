@@ -44,6 +44,8 @@
         <a class="brand" href="${root}index.html" aria-label="NeuroLens home">${BRAND}</a>
         <nav class="nav-links" aria-label="Main">${nav}</nav>
         <div class="nav-right">
+          <div class="menu-wrap" id="alertsWrap" hidden><button class="icon-btn" id="alertsBtn" aria-label="Alerts" aria-haspopup="true" aria-expanded="false" aria-controls="alertsPanel">${NL.icon("alert", 18)}<span class="jobs-badge" id="alertsBadge" hidden></span></button>
+            <div class="dropdown jobs-panel alerts-panel" id="alertsPanel" role="region" aria-label="Alerts"></div></div>
           <div class="menu-wrap" id="jobsWrap" hidden><button class="icon-btn" id="jobsBtn" aria-label="Analyses" aria-haspopup="true" aria-expanded="false" aria-controls="jobsPanel">${NL.icon("bolt", 18)}<span class="jobs-badge" id="jobsBadge" hidden></span></button>
             <div class="dropdown jobs-panel" id="jobsPanel" role="region" aria-label="Analyses in progress"></div></div>
           <button class="icon-btn" id="themeBtn" aria-label="Dark mode" aria-pressed="${theme === "dark"}">${NL.icon(theme === "dark" ? "sun" : "moon", 18)}</button>
@@ -64,7 +66,7 @@
           <div><a class="brand" href="${root}index.html">${BRAND}</a>
             <p>Understand the emotions behind every Instagram Reel — for the content you make and the content your family watches.</p>
             <div class="footer-trust"><span>${NL.icon("lock", 14)}Videos deleted after analysis</span><span>${NL.icon("shield", 14)}Private by design</span></div></div>
-          <div><h2 class="foot-h">Product</h2><a href="${page("dashboard")}">Dashboard</a><a href="${page("analyze")}">Analyze a Reel</a><a href="${page("import")}">Import your data</a><a href="${page("family")}">Family monitoring</a><a href="${page("history")}">History</a><a href="${page("pricing")}">Pricing</a></div>
+          <div><h2 class="foot-h">Product</h2><a href="${page("dashboard")}">Dashboard</a><a href="${page("analyze")}">Analyze a Reel</a><a href="${page("import")}">Import your data</a><a href="${page("feed")}">Feed check</a><a href="${page("family")}">Family monitoring</a><a href="${page("history")}">History</a><a href="${page("pricing")}">Pricing</a></div>
           <div><h2 class="foot-h">Learn</h2><a href="${root}index.html#how">How it works</a><a href="${page("results")}?id=sample">Sample report</a><a href="${root}index.html#faq">FAQ</a><a href="${page("about")}">About</a></div>
           <div><h2 class="foot-h">Account</h2><a href="${page("login")}">Log in</a><a href="${page("account")}">Billing</a><a href="${page("history")}">My analyses</a></div>
         </div>
@@ -89,6 +91,7 @@
         ${item("overview", page("dashboard"), "chart", "Overview")}
         ${item("analyze", page("analyze"), "plus", "New analysis")}
         ${item("import", page("import"), "upload", "Import data")}
+        ${item("feed", page("feed"), "eye", "Feed check")}
         ${item("history", page("history"), "history", "History")}
         ${item("family", page("family"), "users", "Family")}
         ${item("report", page("report") + "?profile=me&days=30", "file", "Monthly report")}
@@ -203,6 +206,8 @@
       if (!NL.api) await load("js/core/api.js");
       if (!NL.jobs) await load("js/core/jobs.js");
       if (!NL.jobTray) await load("js/core/jobtray.js");
+      if (!NL.owner) await load("js/core/owner.js");
+      if (!NL.notify) await load("js/core/notify.js");
     })();
   })();
 })();

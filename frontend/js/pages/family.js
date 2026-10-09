@@ -22,6 +22,7 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <a class="btn primary sm" href="analyze.html?profile=${encodeURIComponent(c.id)}" aria-label="Analyze a Reel for ${NL.esc(c.name)}">${NL.icon("plus", 16)}Analyze a Reel</a>
           <a class="btn sm" href="report.html?profile=${encodeURIComponent(c.id)}&days=7" aria-label="Weekly report for ${NL.esc(c.name)}">Weekly report</a>
+          <a class="btn sm" href="feed.html?profile=${encodeURIComponent(c.id)}" aria-label="Feed monitoring for ${NL.esc(c.name)}">Feed monitoring</a>
           ${NL.imp && NL.imp.store && NL.imp.store.sourcesFor(c.id).length ? NL.imp.store.sourcesFor(c.id).map((s) => `<a class="btn sm" href="habits.html?profile=${encodeURIComponent(c.id)}&src=${s}" aria-label="${s === "ig" ? "Instagram" : "YouTube"} habits report for ${NL.esc(c.name)}">${s === "ig" ? "Instagram" : "YouTube"} report</a>`).join("") : `<a class="btn sm" href="import.html?profile=${encodeURIComponent(c.id)}" aria-label="Import ${NL.esc(c.name)}'s Instagram or YouTube history">Import history</a>`}</div></article>`;
     }).join("") : `<div class="card empty"><div class="e-ico">${NL.icon("users", 32)}</div><h2 class="h3">No child profiles yet</h2><p>Add one to start reviewing their Reels.</p></div>`;
 

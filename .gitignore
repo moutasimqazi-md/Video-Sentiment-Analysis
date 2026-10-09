@@ -8,3 +8,6 @@ backend/data/*
 instagram-*/
 takeout-*/
 Takeout/
+
+# offline experiment artifacts (embeddings of real frames)
+backend/eval/_*.npy

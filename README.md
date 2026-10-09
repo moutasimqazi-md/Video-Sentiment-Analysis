@@ -45,6 +45,15 @@ Videos and images are scored on what the camera sees; sound is a supporting sign
 - **Background queue:** the site runs analyses in the background (`js/core/jobs.js`, tray in the header), so you can add up to 10 links or files and keep browsing.
 - Offline experiments live in `backend/eval/` (`pip install -r backend/requirements-dev.txt`).
 
+## Feed check, account review and child monitoring
+`pages/feed.html` (sidebar: Feed check). Sign in to Instagram once inside a **private browser shown in the page** (like the isolated-browser step in savv-mvp; no new window or tab): an isolated headless Chrome with its own profile in `backend/data/sessions/` is streamed to a canvas over a WebSocket (Chrome screencast, `backend/neurolens/live.py`, `frontend/js/core/browserview.js`) and your clicks and typing are sent back. Your password goes straight to Instagram. Then run a check: **Explore**, **For You reels**, **search topics**, or an **Account review** of the account's own posts. Everything found goes through the same engine and produces a short report.
+- It reads what Instagram *serves* that account, not what was watched. For You scrolling counts as viewing those reels.
+- **Child monitoring:** needs a consent confirmation (stored with a date), runs on a schedule (30 min to daily, explore grid only), only checks items it has not seen, and raises alerts for heavy-tone or revealing content, plus a digest per check. The child profile shows "Monitoring on". No hidden mode.
+- **Alerts:** the bell in the header (unread count, list, mark read) plus browser push notifications through a service worker (`frontend/sw.js`, VAPID keys in `backend/data/`), so they arrive even when the site is closed. Turn them on from the bell.
+- **Owner lock:** these routes work with no setup on the computer running the server. Other devices (the public ngrok address, a phone) connect once through a single-use link made on that computer (Feed check > Use on another device, valid 10 minutes). A request that comes through the proxy without that pairing is refused.
+- Code: `backend/neurolens/{live,browser,scanner,monitor,monitorstore,alerts,push,guard,wellbeing,feed_api}.py`, `frontend/js/pages/feed.js`, `js/core/{owner,notify}.js`. Instagram's page layout changes; the selectors in `browser.py` read links, not styling, but may need a tweak if Instagram changes its routes.
+- Tests use a fake Instagram (`NL_IG_BASE=http://localhost:8765`, `NL_BROWSER_HEADLESS=1`).
+
 ## Design system
 Light-first theme (dark mode via the header toggle) with tokens in `css/base.css`: coral/blue palette, Inter + Plus Jakarta Sans, an AA-contrast `--coral-ink` for text, spacing scale, shadows and a focus ring. Icons are inline SVG (`js/core/icons.js`, use `<i data-icon="name">`). Sections fade in on scroll (`.reveal`) and respect `prefers-reduced-motion`.
 

@@ -52,7 +52,7 @@ def _friendly(err):
     return "Couldn't download that link: " + msg.replace("ERROR: ", "")[:200]
 
 
-def download(url, dest_dir, on_progress=None):
+def download(url, dest_dir, on_progress=None, cookiefile=None):
     """Download to dest_dir. Returns (file_path, title)."""
 
     def hook(d):
@@ -78,6 +78,8 @@ def download(url, dest_dir, on_progress=None):
         "progress_hooks": [hook],
         "js_runtimes": {"node": {}},
     }
+    if cookiefile:
+        opts["cookiefile"] = cookiefile  # a logged-in session, so private-account reels this person can see download too
     try:
         with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(url, download=False)

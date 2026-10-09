@@ -9,3 +9,5 @@ pillow
 av
 yt-dlp
 imageio-ffmpeg
+playwright
+pywebpush

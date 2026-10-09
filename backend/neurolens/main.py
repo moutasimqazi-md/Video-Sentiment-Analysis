@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from neurolens import analyzer, calibration, downloader, logstore
+from neurolens import analyzer, calibration, downloader, feed_api, logstore, monitor, monitorstore
 from neurolens.analyzer import analyze_video
 
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
@@ -63,6 +63,9 @@ def _sweep_temp():
 def start_warm_up():
     _sweep_temp()
     logstore.init_db()
+    monitorstore.init()
+    monitorstore.abort_stale_scans()
+    monitor.start()
 
     def run():
         try:
@@ -136,7 +139,7 @@ def _finish(job_id, result, error, deleted, source):
     _update(job_id, status="done", stage="Done", progress=1.0, result=result, deleted=deleted)
 
 
-def _run_file_job(job_id, tmp_path):
+def _run_file_job(job_id, tmp_path, source=None):
     result = error = None
     try:
         _update(job_id, stage="Waiting for the analyzer", progress=0.0)
@@ -148,10 +151,10 @@ def _run_file_job(job_id, tmp_path):
         error = GENERIC_ERROR
     finally:
         Path(tmp_path).unlink(missing_ok=True)
-    _finish(job_id, result, error, not Path(tmp_path).exists(), {"kind": "upload"})
+    _finish(job_id, result, error, not Path(tmp_path).exists(), source or {"kind": "upload"})
 
 
-def _run_link_job(job_id, url):
+def _run_link_job(job_id, url, cookiefile=None):
     workdir = tempfile.mkdtemp(prefix=TEMP_PREFIX)
     source = {"kind": "link", "url": url}
     result = error = None
@@ -161,6 +164,7 @@ def _run_link_job(job_id, url):
             url,
             workdir,
             lambda f: _update(job_id, stage="Downloading video", progress=round(0.02 + 0.18 * f, 3)),
+            cookiefile=cookiefile,
         )
         source["title"] = title
         _update(job_id, stage="Waiting for the analyzer", progress=0.2)
@@ -276,6 +280,9 @@ def keyframe(job_id: str, n: int):
 def model_info():
     c = calibration.info()
     return {"learning": c["active"], "rated_examples": c["examples"]}
+
+
+app.include_router(feed_api.router)
 
 
 # Registered last so the /api routes win; serves index.html at "/" and pages/*.html, css/, js/, assets/.
