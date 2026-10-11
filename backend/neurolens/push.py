@@ -29,8 +29,8 @@ def public_key():
     return base64.urlsafe_b64encode(raw).rstrip(b"=").decode()
 
 
-def send(title, body, url="pages/feed.html"):
-    subs = monitorstore.subs()
+def send(title, body, url="pages/feed.html", uid=None):
+    subs = monitorstore.subs(uid)
     if not subs:
         return 0
     from pywebpush import WebPushException, webpush

@@ -1,3 +1,4 @@
+import os
 import re
 import shutil
 import tempfile
@@ -6,13 +7,13 @@ import time
 import uuid
 from pathlib import Path
 
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, Request, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from neurolens import analyzer, calibration, downloader, feed_api, logstore, monitor, monitorstore
+from neurolens import accounts, accounts_api, analyzer, browser, calibration, downloader, feed_api, guard, logstore, monitor, monitorstore
 from neurolens.analyzer import analyze_video
 
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
@@ -64,6 +65,7 @@ def start_warm_up():
     _sweep_temp()
     logstore.init_db()
     monitorstore.init()
+    accounts.init()
     monitorstore.abort_stale_scans()
     monitor.start()
 
@@ -89,7 +91,7 @@ def _update(job_id, **fields):
         JOBS[job_id].update(fields)
 
 
-def _start_job(target, arg):
+def _start_job(target, *args):
     _prune_jobs()
     job_id = uuid.uuid4().hex
     with JOBS_LOCK:
@@ -101,7 +103,7 @@ def _start_job(target, arg):
             "error": None,
             "created": time.time(),
         }
-    threading.Thread(target=target, args=(job_id, arg), daemon=True).start()
+    threading.Thread(target=target, args=(job_id, *args), daemon=True).start()
     return {"job_id": job_id}
 
 
@@ -154,7 +156,7 @@ def _run_file_job(job_id, tmp_path, source=None):
     _finish(job_id, result, error, not Path(tmp_path).exists(), source or {"kind": "upload"})
 
 
-def _run_link_job(job_id, url, cookiefile=None):
+def _run_link_job(job_id, url, cookiefile=None, cleanup_cookie=False):
     workdir = tempfile.mkdtemp(prefix=TEMP_PREFIX)
     source = {"kind": "link", "url": url}
     result = error = None
@@ -172,16 +174,25 @@ def _run_link_job(job_id, url, cookiefile=None):
             result = _analyze(job_id, path, lo=0.2, hi=1.0)
     except downloader.LinkError as e:
         error = str(e)
+        if error.startswith("Instagram wouldn't let us download"):
+            error = ("Instagram wouldn't let us download this reel, even with your connected account. It may be private to you, "
+                     "or the connection needs renewing (Feed, then sign in again). You can also upload the file instead."
+                     if cookiefile else
+                     "Instagram blocks downloads from our server for most reels. Connect your Instagram account in Feed once, then "
+                     "try again, or upload the file instead.")
     except Exception as e:
         print(f"analysis failed: {e!r}", flush=True)  # detail stays in the server log
         error = GENERIC_ERROR
     finally:
         shutil.rmtree(workdir, ignore_errors=True)  # the downloaded video is always removed
+        if cleanup_cookie and cookiefile:
+            Path(cookiefile).unlink(missing_ok=True)  # the copy of the sign-in made for this one job
     _finish(job_id, result, error, not Path(workdir).exists(), source)
 
 
 @app.post("/api/analyze")
-async def analyze(file: UploadFile = File(...)):
+async def analyze(request: Request, file: UploadFile = File(...)):
+    uid = accounts_api.charge_analysis(request)  # a signed-in user needs analyses left on their plan
     suffix = Path(file.filename or "").suffix.lower()
     if suffix not in ALLOWED_EXTENSIONS:
         raise HTTPException(400, f"Unsupported file type: {suffix or 'unknown'}")
@@ -206,16 +217,34 @@ async def analyze(file: UploadFile = File(...)):
         print(f"upload failed: {e!r}", flush=True)
         raise HTTPException(500, "Upload failed. Please try again.")
 
+    if uid:
+        accounts.add_usage(uid)
     return _start_job(_run_file_job, tmp_path)
 
 
 @app.post("/api/analyze-link")
-def analyze_link(req: LinkRequest):
+def analyze_link(req: LinkRequest, request: Request):
+    uid = accounts_api.charge_analysis(request)
     try:
         url = downloader.validate_url(req.url)
     except downloader.LinkError as e:
         raise HTTPException(400, str(e))
-    return _start_job(_run_link_job, url)
+    cookiefile = None
+    if "instagram.com" in url.lower():
+        # Instagram refuses anonymous downloads for most reels, so use this person's own connected account when they have one
+        try:
+            who = guard.actor(request)
+            fd, tmp = tempfile.mkstemp(prefix=TEMP_PREFIX, suffix=".txt")
+            os.close(fd)
+            if browser.session_cookies_to(who.ns("me"), tmp):
+                cookiefile = tmp
+            else:
+                Path(tmp).unlink(missing_ok=True)
+        except Exception as e:
+            print(f"cookie lookup failed: {e!r}"[:200], flush=True)
+    if uid:
+        accounts.add_usage(uid)
+    return _start_job(_run_link_job, url, cookiefile, cookiefile is not None)
 
 
 @app.get("/api/jobs/{job_id}")
@@ -283,6 +312,7 @@ def model_info():
 
 
 app.include_router(feed_api.router)
+app.include_router(accounts_api.router)
 
 
 # Registered last so the /api routes win; serves index.html at "/" and pages/*.html, css/, js/, assets/.

@@ -257,10 +257,11 @@ def view_token(pid):
     return tok
 
 
-def redeem_view_token(tok, pid):
+def consume_view_token(tok):
+    """Returns the profile id a valid single-use key was made for (and uses it up), else None."""
     with _glock:
         got = _tokens.pop(tok or "", None)
-    return bool(got and got[0] == pid and got[1] > time.time())
+    return got[0] if got and got[1] > time.time() else None
 
 
 def status(pid):

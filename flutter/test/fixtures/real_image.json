@@ -1,0 +1,89 @@
+{
+ "id": "bd29e8bf956645f9ba7827d9c0a2817e",
+ "result": {
+  "kind": "image",
+  "safety": {
+   "checked": true,
+   "level": "clear",
+   "flags": [],
+   "frames_checked": 1
+  },
+  "confidence": {
+   "level": "clear",
+   "margin": 50.9
+  },
+  "duration_seconds": 0,
+  "frames_analyzed": 1,
+  "timeline": [],
+  "averages": {
+   "confident": 0.9,
+   "motivated": 0.1,
+   "focused": 0.5,
+   "inspired": 0.0,
+   "excited": 3.7,
+   "happy": 1.1,
+   "funny": 0.1,
+   "romantic": 0.0,
+   "hungry": 2.9,
+   "peaceful": 16.8,
+   "heartbroken": 0.0,
+   "sad": 67.7,
+   "angry": 6.1,
+   "lost": 0.0,
+   "tired": 0.0,
+   "depressed": 0.1
+  },
+  "visual_averages": {
+   "confident": 0.9,
+   "motivated": 0.1,
+   "focused": 0.5,
+   "inspired": 0.0,
+   "excited": 3.7,
+   "happy": 1.1,
+   "funny": 0.1,
+   "romantic": 0.0,
+   "hungry": 2.9,
+   "peaceful": 16.8,
+   "heartbroken": 0.0,
+   "sad": 67.7,
+   "angry": 6.1,
+   "lost": 0.0,
+   "tired": 0.0,
+   "depressed": 0.1
+  },
+  "audio": {
+   "available": false,
+   "reason": "images have no sound"
+  },
+  "dominant_mood": "sad",
+  "color_metrics": {
+   "avg_brightness": 67.7,
+   "avg_saturation": 52.0,
+   "cuts_per_minute": 0
+  },
+  "verdict": "This image reads as sad \u2014 Sad-song / Feeling-low Reels (68%). Next strongest vibes: peaceful 17%, angry 6%.",
+  "mood_labels": {
+   "confident": "Attitude Reels",
+   "motivated": "Motivation Reels",
+   "focused": "Gym / Goals Reels",
+   "inspired": "Transformation Reels",
+   "excited": "Celebration Reels",
+   "happy": "Fun / Trending Reels",
+   "funny": "Comedy / Relatable Reels",
+   "romantic": "Love / Couple Reels",
+   "hungry": "Food / Cravings Reels",
+   "peaceful": "Aesthetic / Nature Reels",
+   "heartbroken": "Breakup / Emotional Reels",
+   "sad": "Sad-song / Feeling-low Reels",
+   "angry": "Savage / Rage Reels",
+   "lost": "Deep-thought / Alone Reels",
+   "tired": "Stress / Life-struggle Reels",
+   "depressed": "Dark / Healing Reels"
+  },
+  "keyframes": [],
+  "video_deleted": true,
+  "source": {
+   "kind": "upload"
+  }
+ }
+}

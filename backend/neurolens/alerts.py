@@ -1,6 +1,6 @@
 """Turns scan results into notifications: saved in the alerts table (the in-app bell) and pushed to subscribed browsers."""
 
-from neurolens import monitorstore, push
+from neurolens import accounts, monitorstore, push
 
 LEVEL_RANK = {"info": 0, "watch": 1, "high": 2}
 
@@ -12,8 +12,8 @@ def _name(pid):
 
 def _emit(pid, level, kind, title, body, link=None, job_id=None, scan_id=None, notify=True):
     aid = monitorstore.add_alert(pid, level, kind, title, body, link, job_id, scan_id)
-    if notify:
-        push.send(title, body, link or "pages/feed.html")
+    if notify:  # each person's own browsers only: the owner's, or the signed-in user's
+        push.send(title, body, link or "pages/feed.html", uid=accounts.uid_of(pid))
     return aid
 
 

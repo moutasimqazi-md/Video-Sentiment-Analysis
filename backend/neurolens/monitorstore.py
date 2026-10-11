@@ -32,6 +32,9 @@ def init():
             CREATE TABLE IF NOT EXISTS push_subs (endpoint TEXT PRIMARY KEY, sub_json TEXT, created_at REAL);
             """
         )
+        cols = {r[1] for r in con.execute("PRAGMA table_info(push_subs)").fetchall()}
+        if "user_id" not in cols:  # browser notifications belong to one person: the owner (NULL) or a signed-in user
+            con.execute("ALTER TABLE push_subs ADD COLUMN user_id TEXT")
 
 
 def _rows(sql, args=()):
@@ -99,8 +102,8 @@ def get_scan(sid):
     return _scan_out(r[0]) if r else None
 
 
-def list_scans(pid=None, limit=20):
-    rows = _rows("SELECT * FROM scans WHERE (?1 IS NULL OR profile_id=?1) ORDER BY created_at DESC LIMIT ?2", (pid, limit))
+def list_scans(pid=None, limit=20, prefix=None):
+    rows = _rows("SELECT * FROM scans WHERE (?1 IS NULL OR profile_id=?1) AND (?3 IS NULL OR profile_id LIKE ?3 || '%') ORDER BY created_at DESC LIMIT ?2", (pid, limit, prefix))
     out = []
     for r in rows:
         s = _scan_out(r)
@@ -137,25 +140,26 @@ def add_alert(pid, level, kind, title, body, link=None, job_id=None, scan_id=Non
     return aid
 
 
-def list_alerts(pid=None, since=0, limit=50):
-    rows = _rows("SELECT * FROM alerts WHERE (?1 IS NULL OR profile_id=?1) AND created_at>? ORDER BY created_at DESC LIMIT ?", (pid, since, limit))
-    unread = _rows("SELECT COUNT(*) AS n FROM alerts WHERE seen=0 AND (?1 IS NULL OR profile_id=?1)", (pid,))[0]["n"]
+def list_alerts(pid=None, since=0, limit=50, prefix=None):
+    rows = _rows("SELECT * FROM alerts WHERE (?1 IS NULL OR profile_id=?1) AND (?4 IS NULL OR profile_id LIKE ?4 || '%') AND created_at>?2 ORDER BY created_at DESC LIMIT ?3", (pid, since, limit, prefix))
+    unread = _rows("SELECT COUNT(*) AS n FROM alerts WHERE seen=0 AND (?1 IS NULL OR profile_id=?1) AND (?2 IS NULL OR profile_id LIKE ?2 || '%')", (pid, prefix))[0]["n"]
     return {"alerts": [{"id": r["alert_id"], "profile": r["profile_id"], "createdAt": r["created_at"], "level": r["level"], "kind": r["kind"], "title": r["title"],
                         "body": r["body"], "link": r["link"], "jobId": r["job_id"], "scanId": r["scan_id"], "seen": bool(r["seen"])} for r in rows], "unread": unread}
 
 
-def mark_read(ids=None):
+def mark_read(ids=None, prefix=None):
+    """Mark alerts read. A prefix limits this to one user's alerts, so ids from someone else's are ignored."""
     with _lock, _conn() as con:
         if ids:
-            con.executemany("UPDATE alerts SET seen=1 WHERE alert_id=?", [(i,) for i in ids])
+            con.executemany("UPDATE alerts SET seen=1 WHERE alert_id=? AND (?2 IS NULL OR profile_id LIKE ?2 || '%')", [(i, prefix) for i in ids])
         else:
-            con.execute("UPDATE alerts SET seen=1")
+            con.execute("UPDATE alerts SET seen=1 WHERE (?1 IS NULL OR profile_id LIKE ?1 || '%')", (prefix,))
 
 
 # ---------------- push ----------------
-def save_sub(sub):
+def save_sub(sub, uid=None):
     with _lock, _conn() as con:
-        con.execute("INSERT OR REPLACE INTO push_subs (endpoint, sub_json, created_at) VALUES (?,?,?)", (sub["endpoint"], json.dumps(sub), time.time()))
+        con.execute("INSERT OR REPLACE INTO push_subs (endpoint, sub_json, created_at, user_id) VALUES (?,?,?,?)", (sub["endpoint"], json.dumps(sub), time.time(), uid))
 
 
 def drop_sub(endpoint):
@@ -163,5 +167,6 @@ def drop_sub(endpoint):
         con.execute("DELETE FROM push_subs WHERE endpoint=?", (endpoint,))
 
 
-def subs():
-    return [json.loads(r["sub_json"]) for r in _rows("SELECT sub_json FROM push_subs")]
+def subs(uid=None):
+    """The browsers that should get notifications for this person (uid None = the server owner)."""
+    return [json.loads(r["sub_json"]) for r in _rows("SELECT sub_json FROM push_subs WHERE (?1 IS NULL AND user_id IS NULL) OR user_id = ?1", (uid,))]

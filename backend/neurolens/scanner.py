@@ -10,7 +10,7 @@ from pathlib import Path
 
 import requests
 
-from neurolens import alerts, browser, logstore, monitorstore, wellbeing
+from neurolens import accounts, alerts, browser, logstore, monitorstore, wellbeing
 
 KINDS = {"foryou": "For You reels", "explore": "Explore", "terms": "Search topics", "profile": "Account review"}
 MAX_ITEMS = 24
@@ -96,6 +96,10 @@ def summarize(kind, items):
     return out
 
 
+class PlanLimit(Exception):
+    pass
+
+
 def run(scan_id, pid, kind, params):
     from neurolens import main as app  # imported late: main imports this module's siblings
 
@@ -108,6 +112,12 @@ def run(scan_id, pid, kind, params):
         with SCAN_SLOT:
             store.update_scan(scan_id, stage="Opening Instagram", progress=0.05)
             limit = max(1, min(int(params.get("limit") or 10), MAX_ITEMS))
+            uid = accounts.uid_of(pid)
+            if uid:  # a signed-in user's checks count against their plan
+                left = accounts.remaining(uid)
+                if left <= 0:
+                    raise PlanLimit()
+                limit = min(limit, left)
             found = browser.collect(pid, kind, limit=limit, terms=params.get("terms"), cookie_out=cookiefile)
         username = None
         if found and found[0].get("username"):
@@ -125,6 +135,10 @@ def run(scan_id, pid, kind, params):
         for n, it in enumerate(todo, 1):
             store.update_scan(scan_id, stage=f"Checking {n} of {len(todo)}", progress=round(0.1 + 0.85 * (n - 1) / max(1, len(todo)), 3))
             rec = {"url": it["url"], "kind": it["kind"], "source": it.get("source"), "ok": False}
+            if uid:
+                if accounts.remaining(uid) <= 0:
+                    break
+                accounts.add_usage(uid, 1)
             try:
                 job_id, result = _analyze_item(app, it, workdir, cookiefile)
                 rec["jobId"] = job_id
@@ -151,6 +165,10 @@ def run(scan_id, pid, kind, params):
         m = store.get_monitor(pid)
         if m:
             store.save_monitor(pid, last_scan=time.time(), status="ok", status_at=time.time())
+    except PlanLimit:
+        store.update_scan(scan_id, status="error", stage="Plan limit", finished_at=time.time(), error="You have used this month's analyses. Upgrade your plan or wait until it resets.", items=items)
+        if params.get("alerts"):
+            alerts._emit(pid, "watch", "limit", "Monthly limit reached", "Automatic checks are paused until your plan resets or you upgrade.", None, notify=False)
     except browser.SessionExpired:
         store.update_scan(scan_id, status="error", stage="Login needed", finished_at=time.time(), error="The Instagram session has expired. Log in again.", items=items)
         m = store.get_monitor(pid)

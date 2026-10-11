@@ -87,3 +87,47 @@ def public_url():
     except Exception:
         pass
     return None
+
+
+class Actor:
+    """The caller of an owner-or-user route. The owner (this computer, or a paired browser) sees everything with the original ids.
+    A signed-in user works in a private namespace: their ids are stored as `u<id>-<id>`, and they can only reach their own."""
+
+    def __init__(self, kind, uid=None):
+        self.kind, self.uid = kind, uid
+        self.prefix = f"u{uid}-" if kind == "user" else ""
+
+    @property
+    def is_user(self):
+        return self.kind == "user"
+
+    def ns(self, pid):
+        return self.prefix + pid
+
+    def out(self, pid):
+        return pid[len(self.prefix):] if self.prefix and pid.startswith(self.prefix) else pid
+
+    def owns(self, pid):
+        return not self.is_user or (pid or "").startswith(self.prefix)
+
+
+def actor(request: Request):
+    """A signed-in user (X-User-Token) or the owner. An explicit user token always wins, so a phone using the USB route
+    to this computer is still treated as the user it signed in as, never as the owner."""
+    from neurolens import accounts
+
+    tok = request.headers.get("x-user-token")
+    if tok:
+        u = accounts.by_token(tok)
+        if not u:
+            raise HTTPException(401, "Please sign in again.")
+        return Actor("user", u["user_id"])
+    require_owner(request)
+    return Actor("owner")
+
+
+def user_actor(request: Request):
+    a = actor(request)
+    if not a.is_user:
+        raise HTTPException(401, "Please sign in.")
+    return a

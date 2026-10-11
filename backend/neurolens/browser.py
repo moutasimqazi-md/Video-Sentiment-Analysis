@@ -67,6 +67,68 @@ def disconnect(pid):
         shutil.rmtree(_dir(pid), ignore_errors=True)
 
 
+def import_session(pid, cookies):
+    """Sign-in done on the person's own phone: put those Instagram cookies into this profile's private Chrome and check they work.
+    Only instagram.com cookies are kept; the password was never sent here."""
+    from playwright.sync_api import sync_playwright
+
+    clean = []
+    for c in cookies[:80]:
+        name, value = str(c.get("name", ""))[:100], str(c.get("value", ""))[:4000]
+        domain = str(c.get("domain") or ".instagram.com").lower()
+        if not name or not value or not (domain.lstrip(".") == "instagram.com" or domain.endswith(".instagram.com")):
+            continue
+        item = {"name": name, "value": value, "domain": domain, "path": str(c.get("path") or "/"), "secure": True,
+                "httpOnly": bool(c.get("httpOnly"))}
+        exp = c.get("expires")
+        # A phone's cookie jar hands over name and value only. Without an expiry Chrome treats the cookie as session-only and drops it
+        # when the profile closes, which would silently log the account out again, so give it a long life like Instagram's own.
+        item["expires"] = float(exp) if isinstance(exp, (int, float)) and exp > time.time() else time.time() + 180 * 86400
+        clean.append(item)
+    names = {c["name"] for c in clean}
+    if "sessionid" not in names:
+        raise ValueError("Instagram sign-in wasn't completed.")
+    with _lock(pid), sync_playwright() as p:
+        ctx = _launch(p, pid, True)
+        try:
+            ctx.add_cookies(clean)
+            ok = _has_session(ctx)
+            page = ctx.pages[0] if ctx.pages else ctx.new_page()
+            page.wait_for_timeout(800)
+        finally:
+            ctx.close()
+    if not ok:
+        raise ValueError("Instagram sign-in wasn't completed.")
+    at = int(time.time())
+    (_dir(pid) / "connected").write_text(str(at))
+    try:
+        _write_cookies([{**c, "secure": True} for c in clean], _dir(pid) / "cookies.txt")  # lets link downloads use this sign-in too
+    except Exception:
+        pass
+    return at
+
+
+def session_cookies_to(pid, dest):
+    """Copies this profile's Instagram sign-in to `dest` in the format the downloader reads. Returns False when not connected."""
+    if connected_at(pid) is None:
+        return False
+    src = _dir(pid) / "cookies.txt"
+    if not src.exists():  # a sign-in made in the private browser: read the cookies out of the profile once
+        from playwright.sync_api import sync_playwright
+
+        with _lock(pid), sync_playwright() as p:
+            ctx = _launch(p, pid, True)
+            try:
+                cookies = ctx.cookies(BASE)
+            finally:
+                ctx.close()
+        if not any(c["name"] == "sessionid" for c in cookies):
+            return False
+        _write_cookies(cookies, src)
+    shutil.copyfile(src, dest)
+    return True
+
+
 # ---------------- reading ----------------
 class SessionExpired(Exception):
     pass
@@ -172,6 +234,8 @@ def _write_cookies(cookies, path):
     lines = ["# Netscape HTTP Cookie File"]
     for c in cookies:
         dom = c["domain"]
+        if not dom.startswith(".") and dom.endswith("instagram.com"):
+            dom = "." + dom.lstrip(".")
         lines.append("\t".join([dom, "TRUE" if dom.startswith(".") else "FALSE", c.get("path", "/"), "TRUE" if c.get("secure") else "FALSE",
                                 str(int(c.get("expires", 0) or 0)), c["name"], c["value"]]))
     Path(path).write_text("\n".join(lines) + "\n", encoding="utf-8")

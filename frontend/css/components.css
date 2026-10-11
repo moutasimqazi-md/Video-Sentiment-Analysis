@@ -194,7 +194,8 @@ input[type="checkbox"] { accent-color: var(--coral); width: 17px; height: 17px; 
   label:has(> input[type="checkbox"]) { align-items: center; gap: 10px; }
 }
 /* notch / home-indicator safe areas */
-.site-header .nav { padding-left: max(0px, env(safe-area-inset-left)); padding-right: max(0px, env(safe-area-inset-right)); }
+.site-header .nav { padding-left: max(24px, env(safe-area-inset-left)); padding-right: max(24px, env(safe-area-inset-right)); }
+@media (max-width: 860px) { .site-header .nav { padding-left: max(18px, env(safe-area-inset-left)); padding-right: max(18px, env(safe-area-inset-right)); } }
 .toast { bottom: calc(28px + env(safe-area-inset-bottom)); }
 .site-footer { padding-bottom: env(safe-area-inset-bottom); }
 .mobile-nav { padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
