@@ -1,9 +1,10 @@
-/* Import: intake (ZIPs, folders, loose files) + adapters for Instagram "Download your information" and Google Takeout (YouTube).
+/* Import: intake (ZIPs, folders, loose files) + adapters for Instagram "Download your information", Google Takeout (YouTube),
+   TikTok "Download your data" (JSON) and Facebook "Download your information" (JSON).
    Everything runs in the browser; only an allowlist of history files is ever read (never messages or personal details).
 
    Every adapter yields events in ONE shape:
-     { src: "ig" | "yt", kind: "reel"|"post"|"story"|"video"|"short"|"music"|"search"|"profile"|"comment",
-       act: "view"|"like"|"save"|"comment"|"search"|"follow"|"sub"|"ad"|"hide",
+     { src: "ig" | "yt" | "tt" | "fb", kind: "reel"|"post"|"story"|"video"|"short"|"music"|"search"|"profile"|"comment",
+       act: "view"|"like"|"save"|"comment"|"search"|"follow"|"sub"|"ad"|"hide"|"share",
        t: epoch seconds, url, text (caption / title / query), by (channel or author) }                                           */
 window.NL = window.NL || {};
 NL.imp = NL.imp || {};
@@ -60,10 +61,23 @@ NL.imp.parse = (() => {
     ["ytSubs", /(^|\/)subscriptions\/[^/]*\.csv$/i, "Subscriptions"],
     ["ytLiked", /(^|\/)liked videos\.csv$/i, "Liked videos"],
   ];
-  const LABELS = Object.fromEntries([...IG, ...YT].map(([k, , l]) => [k, l]));
+  /* TikTok puts everything in one JSON file; the sections inside it are picked out by name (see ttEvents), and shown as these kinds. */
+  const TT = [["ttData", /(^|\/)user_data(_tiktok)?\.json$/i, "TikTok activity"]];
+  const TT_KINDS = { ttView: "Videos watched", ttLike: "Likes", ttSave: "Favorites", ttSearch: "Searches", ttShare: "Shares", ttComment: "Comments" };
+  /* Facebook's folder and file names change between exports and I could only check them against Meta's published conventions, so these are
+     deliberately tolerant. Whatever they miss shows up as "none of the files we know" on the import screen rather than being guessed at. */
+  const FB = [
+    ["fbWatched", /(^|\/)(watch\/[^/]*|(video_watch_history|watch_history|videos?_(you_?ve_)?watched|reels?_(you_?ve_)?(watched|viewed)|videos_and_reels_watched)[^/]*)\.json$/i, "Videos and reels watched"],
+    ["fbLikes", /(^|\/)likes_and_reactions\/[^/]*\.json$/i, "Likes and reactions"],
+    ["fbSaved", /(^|\/)saved_items[^/]*(\/[^/]*)?\.json$/i, "Saved"],
+    ["fbSearch", /(^|\/)(search\/[^/]*|your_search_history[^/]*|search_history[^/]*)\.json$/i, "Searches"],
+    ["fbFollowing", /(^|\/)pages?_(you'?ve_followed|you_follow|and_profiles_you_follow)[^/]*\.json$/i, "Pages followed"],
+    ["fbComments", /(^|\/)comments(_and_reactions)?\/comments[^/]*\.json$/i, "Comments"],
+  ];
+  const LABELS = { ...Object.fromEntries([...IG, ...YT, ...TT, ...FB].map(([k, , l]) => [k, l])), ...TT_KINDS };
   const norm = (n) => n.replace(/\\/g, "/");
-  const categorize = (name) => { const n = norm(name); for (const [k, re] of [...IG, ...YT]) if (re.test(n)) return k; return null; };
-  const isPrivate = (name) => /(^|\/)(messages|inbox|message_requests|personal_information|security_and_login_information)\//i.test(norm(name));
+  const categorize = (name) => { const n = norm(name); for (const [k, re] of [...IG, ...YT, ...TT, ...FB]) if (re.test(n)) return k; return null; };
+  const isPrivate = (name) => /(^|\/)(messages|inbox|message_requests|personal_information|profile_information|security_and_login_information|account_activity|friends_and_followers|contact_info|address_book|payment_history)\//i.test(norm(name));
 
   /* ======================= intake: ZIPs, folders, loose files ======================= */
   async function walkEntry(entry, out, base = "") {                      // dropped folders (webkitGetAsEntry)
@@ -89,10 +103,12 @@ NL.imp.parse = (() => {
   }
 
   const IG_HTML = /(videos_watched|liked_posts|posts_viewed|stories_viewed|saved_posts)\.html?$/i;
-  /** -> { sources:[{name, read()}], ignoredPrivate, archives, files, igHtml } */
+  const FB_HTML = /(^|\/)(likes_and_reactions|search|watch|saved_items)[^/]*(\/[^/]*)?\.html?$/i;
+  const TT_TXT = /(^|\/)user_data\.txt$/i;
+  /** -> { sources:[{name, read()}], ignoredPrivate, archives, files, igHtml, fbHtml, ttTxt } */
   async function intake(input, onProgress) {
     const picked = await collect(input);
-    const sources = []; let ignoredPrivate = 0, archives = 0, totalEntries = 0, igHtml = 0;
+    const sources = []; let ignoredPrivate = 0, archives = 0, totalEntries = 0, igHtml = 0, fbHtml = 0, ttTxt = 0;
     for (const { file, path } of picked) {
       if (/\.zip$/i.test(file.name)) {
         archives++;
@@ -104,6 +120,8 @@ NL.imp.parse = (() => {
           if (isPrivate(e.name)) { ignoredPrivate++; continue; }          // never even listed as a candidate
           if (categorize(e.name)) sources.push({ name: norm(e.name), size: e.usize, read: () => z.text(e) });
           else if (IG_HTML.test(norm(e.name))) igHtml++;
+          else if (FB_HTML.test(norm(e.name))) fbHtml++;
+          else if (TT_TXT.test(norm(e.name))) ttTxt++;
         }
       } else {
         totalEntries++;
@@ -111,9 +129,11 @@ NL.imp.parse = (() => {
         if (isPrivate(name)) { ignoredPrivate++; continue; }
         if (categorize(name)) sources.push({ name, size: file.size, read: () => file.text() });
         else if (IG_HTML.test(name)) igHtml++;
+        else if (FB_HTML.test(name)) fbHtml++;
+        else if (TT_TXT.test(name)) ttTxt++;
       }
     }
-    return { sources, ignoredPrivate, archives, files: picked.length, totalEntries, igHtml };
+    return { sources, ignoredPrivate, archives, files: picked.length, totalEntries, igHtml, fbHtml, ttTxt };
   }
 
   /* ======================= Instagram adapter ======================= */
@@ -207,28 +227,133 @@ NL.imp.parse = (() => {
     }).filter((e) => e.url);
   }
 
+
+  /* ======================= TikTok adapter ======================= */
+  // TikTok's JSON export nests everything under sections ("Activity" > "Video Browsing History" > "VideoList" ...). Key names and casing
+  // differ between exports, so a section is recognised by the words in its two innermost keys, and an item by having a date and a link.
+  // TikTok does not export captions: watched/liked items are just a link and a time, so what they are about needs the video check.
+  const lc = (o) => { const m = {}; for (const k in o) m[k.toLowerCase().replace(/[\s_-]+/g, "")] = o[k]; return m; };
+  const firstOf = (m, keys) => { for (const k of keys) if (m[k] != null && m[k] !== "") return m[k]; return ""; };
+  function ttSection(path) {
+    const all = path.join(" ").toLowerCase();
+    if (/message|chat|login|profile|contact|payment|device|inbox/.test(all)) return null;       // never read direct messages or account details
+    const near = path.slice(-2).join(" ").toLowerCase();
+    if (/browsing|watch ?history|videos? ?watched|video ?view/.test(near)) return { act: "view", kind: "video", cat: "ttView" };
+    if (/like/.test(near)) return { act: "like", kind: "video", cat: "ttLike" };
+    if (/favou?rite|saved|collection/.test(near)) return { act: "save", kind: "video", cat: "ttSave" };
+    if (/search/.test(near)) return { act: "search", kind: "search", cat: "ttSearch" };
+    if (/share/.test(near)) return { act: "share", kind: "video", cat: "ttShare" };
+    if (/comment/.test(near)) return { act: "comment", kind: "comment", cat: "ttComment" };
+    return null;
+  }
+  const ttTime = (v) => {
+    if (typeof v === "number") return secs(v);
+    const str = String(v || "").trim();
+    if (/^\d{9,13}$/.test(str)) return secs(Number(str));
+    const zoned = /(Z|[+-]\d{2}:?\d{2}|GMT|UTC)$/i.test(str);
+    return Math.round(Date.parse(zoned ? str : str.replace(" ", "T") + "Z") / 1000) || 0;         // TikTok writes UTC
+  };
+  /** A watched/liked link points at a numeric video id. Rewrite those to the form the downloader understands; keep anything else as is. */
+  function ttUrl(u) {
+    const s = String(u || "").trim();
+    const m = /tiktok(?:v)?\.com\/(?:[^?#]*\/)?(?:video|v|share\/video)\/(\d{8,})/i.exec(s);
+    return m ? `https://www.tiktok.com/@/video/${m[1]}` : s;
+  }
+  function ttEvents(json) {
+    const out = [];
+    const walk = (node, path) => {
+      if (Array.isArray(node)) {
+        const sec = ttSection(path);
+        if (!sec) return;
+        for (const it of node) {
+          if (!it || typeof it !== "object" || Array.isArray(it)) continue;
+          const m = lc(it), t = ttTime(firstOf(m, ["date", "time", "timestamp", "datetime", "createtime"]));
+          if (!t) continue;
+          const url = ttUrl(firstOf(m, ["link", "url", "videolink", "sharelink", "contentlink"]));
+          const text = fix(String(firstOf(m, ["searchterm", "query", "comment", "content", "text"]) || "")).trim();
+          if (sec.act === "search" ? !text : !url && !text) continue;
+          out.push({ src: "tt", kind: sec.kind, act: sec.act, t, url: sec.act === "search" ? "" : url, text: sec.act === "search" || sec.act === "comment" ? text : "", by: "", _cat: sec.cat });
+        }
+      } else if (node && typeof node === "object") for (const k of Object.keys(node)) walk(node[k], path.concat(k));
+    };
+    walk(json, []);
+    return out;
+  }
+
+  /* ======================= Facebook adapter ======================= */
+  // Meta's JSON exports share conventions with Instagram's: a wrapper key holding a list, and items with a timestamp, a title,
+  // data[] and attachments[] (links live in attachments[].data[].external_context.url). Only facebook.com / fb.watch links are kept.
+  function fbUrl(o, depth = 0) {
+    if (!o || depth > 9) return "";
+    if (typeof o === "string") return /^https?:\/\/([a-z0-9-]+\.)*(facebook\.com|fb\.watch|fb\.com)\//i.test(o) ? o : "";
+    if (Array.isArray(o)) { for (const x of o) { const r = fbUrl(x, depth + 1); if (r) return r; } return ""; }
+    if (typeof o === "object") { for (const k of ["url", "href", "uri", "external_context", "media", "attachments", "data"]) if (k in o) { const r = fbUrl(o[k], depth + 1); if (r) return r; } }
+    return "";
+  }
+  const fbDataText = (it) => (Array.isArray(it.data) ? it.data : []).map((d) => (d && typeof d === "object" ? (d.text || (d.comment && d.comment.comment) || d.post || d.name || "") : "")).filter((x) => typeof x === "string" && x).join(" ");
+  function fbEvents(cat, json) {
+    const out = [];
+    const list = listOf(json).filter((x) => x && typeof x === "object");
+    for (const it of list) {
+      const f = igFields(it);
+      const t = f.t || secs(it.timestamp_ms || it.creation_timestamp || 0);
+      if (!t) continue;
+      const url = fbUrl(it) || (/^https?:\/\//i.test(f.url) ? f.url : "");
+      const own = fix(fbDataText(it)).trim();
+      const title = cat === "fbLikes" ? "" : fix(String(it.title || f.text || "")).trim();   // like titles are just "<name> liked <page>'s post"
+      const text = (own || title).slice(0, 300);
+      const reel = /\/(reel|reels)\//i.test(url), vid = reel ? "reel" : /\/videos?\/|\/watch/i.test(url) ? "video" : "post";
+      const ev = { src: "fb", t, url, text, by: "" };
+      switch (cat) {
+        case "fbWatched": Object.assign(ev, { kind: reel ? "reel" : "video", act: "view" }); break;
+        case "fbLikes": Object.assign(ev, { kind: vid, act: "like" }); break;
+        case "fbSaved": Object.assign(ev, { kind: vid, act: "save" }); break;
+        case "fbSearch": Object.assign(ev, { kind: "search", act: "search", url: "", text: own || title.replace(/^you searched( for)?:?\s*/i, "") }); break;
+        case "fbFollowing": Object.assign(ev, { kind: "profile", act: "follow", text: "", by: String(it.title || own || "").slice(0, 80) }); break;
+        case "fbComments": Object.assign(ev, { kind: "comment", act: "comment" }); break;
+        default: continue;
+      }
+      if (ev.act === "search" && !ev.text) continue;
+      if (ev.act === "view" && !ev.url && !ev.text) continue;
+      out.push(ev);
+    }
+    return out;
+  }
+
   /* ======================= main entry ======================= */
   async function run(sources, onProgress) {
-    const events = { ig: [], yt: [] };
+    const events = { ig: [], yt: [], tt: [], fb: [] };
     const recognized = {}, ranges = {}; const problems = [];
     let done = 0, htmlDateProblems = 0, adsSkipped = 0;
+    const note = (cat, evs) => {
+      recognized[cat] = (recognized[cat] || 0) + evs.length;
+      const ts = evs.map((e) => e.t).filter(Boolean);
+      const r = (ranges[cat] = ranges[cat] || { n: 0, from: 0, to: 0 });
+      r.n += evs.length;
+      if (ts.length) { const a = Math.min(...ts), b = Math.max(...ts); r.from = r.from ? Math.min(r.from, a) : a; r.to = Math.max(r.to, b); }
+    };
     for (const s of sources) {
       const cat = categorize(s.name);
       onProgress && onProgress({ stage: `Reading ${(LABELS[cat] || cat).toLowerCase()}`, done, total: sources.length });
       try {
         const text = await s.read();
         let evs = [];
-        if (cat.startsWith("ig")) evs = igEvents(cat, JSON.parse(text));
+        if (cat === "ttData") {
+          evs = ttEvents(JSON.parse(text));
+          if (!evs.length) problems.push(`${s.name}: this TikTok file had no dated history we could read. Request your data again and choose JSON as the file format.`);
+        } else if (cat.startsWith("ig")) evs = igEvents(cat, JSON.parse(text));
+        else if (cat.startsWith("fb")) evs = fbEvents(cat, JSON.parse(text));
         else if (/\.csv$/i.test(s.name)) evs = ytFromCsv(cat, text);
         else if (/\.json$/i.test(s.name)) { const r = ytFromJson(cat, JSON.parse(text)); evs = r.events; adsSkipped += r.skippedAds; }
         else { const r = ytFromHtml(cat, text); evs = r.events; htmlDateProblems += r.badDates; if (!evs.length && r.cells) problems.push(`${s.name}: couldn't read the dates in this HTML file. Re-export from Google Takeout and choose JSON as the format.`); }
-        const bucket = cat.startsWith("ig") ? "ig" : "yt";
+        const bucket = cat.slice(0, 2);
         for (const e of evs) events[bucket].push(e);
-        recognized[cat] = (recognized[cat] || 0) + evs.length;
-        const ts = evs.map((e) => e.t).filter(Boolean);
-        const r = (ranges[cat] = ranges[cat] || { n: 0, from: 0, to: 0 });
-        r.n += evs.length;
-        if (ts.length) { const a = Math.min(...ts), b = Math.max(...ts); r.from = r.from ? Math.min(r.from, a) : a; r.to = Math.max(r.to, b); }
+        if (cat === "ttData") {                                        // one file, several kinds of data: list each kind on its own line
+          const by = {};
+          for (const e of evs) (by[e._cat] = by[e._cat] || []).push(e);
+          for (const [k, list] of Object.entries(by)) note(k, list);
+          evs.forEach((e) => delete e._cat);
+        } else note(cat, evs);
       } catch (e) { problems.push(`${s.name}: ${e.message || "couldn't be read"}`); }
       done++;
       await new Promise((r) => setTimeout(r, 0));                       // let the UI breathe
@@ -237,5 +362,5 @@ NL.imp.parse = (() => {
     return { events, recognized, ranges, problems, adsSkipped, htmlDateProblems };
   }
 
-  return { intake, run, categorize, isPrivate, LABELS, fix, csv, ytId, _ig: igEvents, _yt: { json: ytFromJson, html: ytFromHtml, csv: ytFromCsv } };
+  return { intake, run, categorize, isPrivate, LABELS, fix, csv, ytId, _ig: igEvents, _yt: { json: ytFromJson, html: ytFromHtml, csv: ytFromCsv }, _tt: ttEvents, _fb: fbEvents, ttUrl };
 })();

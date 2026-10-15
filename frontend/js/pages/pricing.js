@@ -35,7 +35,7 @@
     ["Analyses per month", (p) => p.quota],
     ["Visual + audio emotion scores", () => "✓"],
     ["Emotion timeline", () => "✓"],
-    ["Paste Instagram Reel links", (p) => (p.link ? "✓" : "–")],
+    ["Paste video links (Instagram, YouTube, TikTok, Facebook)", (p) => (p.link ? "✓" : "–")],
     ["Download & print reports", (p) => (p.export ? "✓" : "–")],
     ["Wellbeing signal", () => "✓"],
     ["Child monitoring profiles", (p) => p.children || "–"],

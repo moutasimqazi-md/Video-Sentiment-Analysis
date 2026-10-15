@@ -52,7 +52,7 @@ NEW_COLUMNS = {
 
 
 def url_key(url):
-    """Stable identity for a media link: YouTube video id, Instagram shortcode, or the URL without query/fragment."""
+    """Stable identity for a media link: YouTube video id, Instagram shortcode, TikTok / Facebook video id, or the URL without query/fragment."""
     if not url:
         return None
     m = re.search(r"(?:youtube\.com/(?:watch\?v=|shorts/|embed/)|youtu\.be/)([A-Za-z0-9_-]{11})", url)
@@ -61,6 +61,12 @@ def url_key(url):
     m = re.search(r"instagram\.com/(?:[^/]+/)?(?:reel|reels|p|tv)/([A-Za-z0-9_-]+)", url)
     if m:
         return "ig:" + m.group(1)
+    m = re.search(r"tiktok(?:v)?\.com/(?:[^?#]*/)?(?:video|v|share/video)/(\d{8,})", url)
+    if m:
+        return "tt:" + m.group(1)
+    m = re.search(r"facebook\.com/(?:watch/?\?(?:[^#]*&)?v=|reel/|reels/|[^/?#]+/videos/(?:[^/?#]+/)?)(\d{6,})", url)
+    if m:
+        return "fb:" + m.group(1)
     return re.sub(r"[?#].*$", "", url.strip().lower()).rstrip("/")
 
 

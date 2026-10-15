@@ -32,6 +32,7 @@ NL.imp.goals = (() => {
   const GROUPS = [
     { key: "watched", label: "What you watched", noun: "watched items", pick: (e) => e.act === "view" && e.kind !== "story" && e.kind !== "music" },
     { key: "liked", label: "What you liked", noun: "liked items", pick: (e) => e.act === "like" },
+    { key: "searched", label: "What you searched for", noun: "searches", pick: (e) => e.act === "search" },
   ];
 
   /** events: normalized events (any platform mix). sel: { goals:[ids], avoid:[topic keys] }.
@@ -58,7 +59,7 @@ NL.imp.goals = (() => {
         counts[stance]++;
         topics[c.theme] = (topics[c.theme] || 0) + 1;
         if (bucket) { const p = (periods[bucket(e.t)] = periods[bucket(e.t)] || { n: 0, supports: 0, against: 0 }); p.n++; if (stance !== "neutral") p[stance]++; }
-        if (stance === "against" && e.url) examples.push({ url: e.url, text: (e.text || "").replace(/\s+/g, " ").slice(0, 140), t: e.t, src: e.src, topic: c.theme, label: topicLabel(c.theme), score: c.score });
+        if (stance === "against" && (e.url || e.act === "search")) examples.push({ url: e.url, text: (e.text || "").replace(/\s+/g, " ").slice(0, 140), t: e.t, src: e.src, topic: c.theme, label: topicLabel(c.theme), score: c.score });
       }
       const share = (n) => (classified ? n / classified : 0);
       examples.sort((a, b) => b.score - a.score || b.t - a.t);

@@ -25,15 +25,15 @@
 <main class="container page" id="main" tabindex="-1">
   <div class="page-head">
     <span class="badge"><i data-icon="upload" data-size="14"></i>Import</span>
-    <h1 style="margin-top:12px">Import your Instagram &amp; YouTube history</h1>
-    <p>Download your history from each service, drop the files here, and get a habits report: when you scroll, how much, what it's about, and what to watch out for.</p>
+    <h1 style="margin-top:12px">Import your Instagram, YouTube, TikTok &amp; Facebook history</h1>
+    <p>Download your history from each service, drop the files here, and get a separate habits report for each: when you scroll, how much, what it's about, and what to watch out for.</p>
   </div>
 
   <section class="card privacy-card" aria-labelledby="privHead">
     <h2 class="h3" id="privHead"><i data-icon="shield" data-size="18"></i> Your files stay on your device</h2>
     <ul class="ticks">
       <li><i data-icon="check" data-size="16"></i>Everything is read and analyzed in this browser. Your export is never uploaded.</li>
-      <li><i data-icon="check" data-size="16"></i>Only history files are opened (watched, liked, saved, searches). Private messages and personal details are skipped and never read.</li>
+      <li><i data-icon="check" data-size="16"></i>Only history files are opened (watched, liked, saved, searches). Private messages and personal details are skipped and never read. TikTok puts everything in one file, so for TikTok we pick out only the history sections and ignore the rest, including any messages.</li>
       <li><i data-icon="check" data-size="16"></i>We keep a summary and a list of items for browsing, in this browser only. You can delete it any time.</li>
     </ul>
   </section>
@@ -63,15 +63,38 @@
       <p class="muted note">YouTube history lists titles and channels but not watch time, so the report counts videos instead of minutes.</p>
       <a class="btn sm" href="https://takeout.google.com/" target="_blank" rel="noopener noreferrer">Open Google Takeout<i data-icon="external" data-size="15"></i><span class="sr-only"> (opens in a new tab)</span></a>
     </article>
+    <article class="card">
+      <div class="card-icon"><i data-icon="tiktok" data-size="22"></i></div>
+      <h2 class="h3">TikTok</h2>
+      <ol class="steps-list">
+        <li>In the TikTok app open <b>Profile → menu → Settings and privacy → Account → Download your data</b>.</li>
+        <li>Choose <b>All data</b> and the file format <b>JSON</b>, then request the file.</li>
+        <li>TikTok prepares it (it can take a few days). Download it soon after it's ready, because the link expires after about four days.</li>
+        <li>Drop the downloaded <b>.zip</b> (or the <b>user_data</b> JSON file) below.</li>
+      </ol>
+      <p class="muted note">TikTok's export has links and times for what you watched, liked and searched for, but no captions. The report shows when and how much you watch; what the videos are about comes from the video check.</p>
+    </article>
+    <article class="card">
+      <div class="card-icon blue"><i data-icon="facebook" data-size="22"></i></div>
+      <h2 class="h3">Facebook</h2>
+      <ol class="steps-list">
+        <li>Open <b>Settings &amp; privacy → Accounts Center → Your information and permissions → Download your information</b>.</li>
+        <li>Choose your Facebook profile, then <b>Specific types of information</b>. Tick <b>Likes and reactions, Search history, Saved items, Comments, Pages you follow</b> and any <b>watch or video activity</b> that is offered.</li>
+        <li>Set the date range to <b>Last year</b> or <b>All time</b>, the format to <b>JSON</b>, and media quality to the lowest.</li>
+        <li>Wait for Facebook's notification, download the <b>.zip</b>, and drop it below.</li>
+      </ol>
+      <p class="muted note">Facebook's folder and file names change often. The screen after you drop the file lists exactly what was recognised, so you can see at a glance if something was missed.</p>
+      <a class="btn sm" href="https://accountscenter.facebook.com/info_and_permissions/dyi/" target="_blank" rel="noopener noreferrer">Open Facebook's export page<i data-icon="external" data-size="15"></i><span class="sr-only"> (opens in a new tab)</span></a>
+    </article>
   </div>
 
   <section class="panel" id="dropPanel" aria-labelledby="addHead">
     <h2 class="h3" id="addHead">Add your files</h2>
     <label class="dropzone" id="importDrop" for="importFiles">
-      <input id="importFiles" type="file" multiple accept=".zip,.json,.csv,.html,.htm" hidden>
+      <input id="importFiles" type="file" multiple accept=".zip,.json,.csv,.html,.htm,.txt" hidden>
       <div class="dz-icon"><i data-icon="upload" data-size="28"></i></div>
       <strong>Drop your ZIP files here<br>or click to browse</strong>
-      <small>Instagram export (.zip) · Google Takeout (.zip) · or the unzipped files and folders</small>
+      <small>Instagram, Google Takeout, TikTok or Facebook export (.zip) · or the unzipped files and folders</small>
     </label>
     <div class="drop-actions">
       <button class="btn" type="button" id="pickFolder"><i data-icon="film" data-size="16"></i>Choose an unzipped folder</button>

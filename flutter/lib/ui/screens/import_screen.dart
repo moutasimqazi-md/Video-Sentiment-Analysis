@@ -13,7 +13,7 @@ import '../widgets/common.dart';
 import '../widgets/tab_bar.dart';
 import 'habits_report_screen.dart';
 
-/// Import: pick the Instagram / Google Takeout export, see what was found, and build a habits report. Read on this phone only.
+/// Import: pick the Instagram / Google Takeout / TikTok / Facebook export, see what was found, and build a habits report. Read on this phone only.
 class ImportScreen extends StatefulWidget {
   const ImportScreen({super.key, this.profile});
   final String? profile;
@@ -32,7 +32,7 @@ class _ImportScreenState extends State<ImportScreen> {
     setState(() => _error = null);
     List<PlatformFile> res;
     try {
-      res = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: const ['zip', 'json', 'csv', 'html', 'htm']);
+      res = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: const ['zip', 'json', 'csv', 'html', 'htm', 'txt']);
     } catch (_) {
       setState(() => _error = "The file picker couldn't open. Check that NeuroLens can access your files and try again.");
       return;
@@ -47,15 +47,19 @@ class _ImportScreenState extends State<ImportScreen> {
       final r = await readExports(paths);
       if (!mounted) return;
       final ev = (r['events'] as Map).cast<String, dynamic>();
-      final n = (ev['ig'] as List).length + (ev['yt'] as List).length;
+      final n = ImportStore.platforms.fold<int>(0, (a, k) => a + (ev[k] as List).length);
       String? err;
       if ((r['sources'] as int) == 0) {
         if ((r['igHtml'] as int) > 0) {
           err = 'This looks like an Instagram export in HTML format. Request it again and choose JSON as the format.';
+        } else if ((r['fbHtml'] as int) > 0) {
+          err = 'This looks like a Facebook export in HTML format. Request it again and choose JSON as the format.';
+        } else if ((r['ttTxt'] as int) > 0) {
+          err = 'This looks like a TikTok export in text format. Request your data again and choose JSON as the file format.';
         } else if ((r['totalEntries'] as int) == 0) {
-          err = "We couldn't find any files to read. Choose a .zip from Instagram or Google Takeout.";
+          err = "We couldn't find any files to read. Choose a .zip from Instagram, Google Takeout, TikTok or Facebook.";
         } else {
-          err = 'None of the history files we know were found. For Instagram include Likes, Saved, Story interactions and Ads information (posts / videos viewed). For YouTube include History. Use JSON format.';
+          err = 'None of the history files we know were found. For Instagram include Likes, Saved, Story interactions and Ads information (posts / videos viewed). For YouTube include History. For TikTok request all data as JSON. For Facebook include Likes and reactions, Search history and Saved items (and watch activity if offered). Use JSON format.';
         }
       } else if (n == 0) {
         err = 'The files were read but contained no history entries.${(r['problems'] as List).isNotEmpty ? ' ${(r['problems'] as List).first}' : ''}';
@@ -107,7 +111,7 @@ class _ImportScreenState extends State<ImportScreen> {
       if (built.length == 1) {
         Navigator.of(context).push(MaterialPageRoute(builder: (_) => HabitsReportScreen(profile: _profile, src: built.first)));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Two separate reports were created')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${built.length} separate reports were created')));
       }
     } catch (_) {
       if (mounted) {
@@ -126,7 +130,7 @@ class _ImportScreenState extends State<ImportScreen> {
     final profiles = context.watch<ProfilesStore>();
     final saved = store.all();
 
-    Widget steps(IconData icon, String title, List<String> items, String note, String url, String linkLabel) => Padding(
+    Widget steps(IconData icon, String title, List<String> items, String note, [String? url, String linkLabel = '']) => Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: NlCard(
             padding: EdgeInsets.zero,
@@ -146,7 +150,7 @@ class _ImportScreenState extends State<ImportScreen> {
                     ])),
                   Text(note, style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
                   const SizedBox(height: 10),
-                  OutlinedButton.icon(onPressed: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication), icon: const Icon(Icons.open_in_new, size: 18), label: Text(linkLabel)),
+                  if (url != null) OutlinedButton.icon(onPressed: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication), icon: const Icon(Icons.open_in_new, size: 18), label: Text(linkLabel)),
                 ],
               ),
             ),
@@ -157,14 +161,14 @@ class _ImportScreenState extends State<ImportScreen> {
     return Scaffold(
       appBar: const NlTabBar(title: 'Import'),
       body: ListView(padding: const EdgeInsets.fromLTRB(16, 4, 16, 28), children: [
-        Text('Download your history from Instagram or YouTube, add the file here, and get a habits report: when you scroll, how much, what it is about, and what to watch out for.', style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+        Text('Download your history from Instagram, YouTube, TikTok or Facebook, add the file here, and get a separate habits report for each: when you scroll, how much, what it is about, and what to watch out for.', style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant)),
         const SizedBox(height: 14),
         NlCard(color: t.colorScheme.secondaryContainer, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [Icon(Icons.shield_outlined, color: t.colorScheme.primary), const SizedBox(width: 8), Expanded(child: Text('Your files stay on your phone', style: t.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)))]),
           const SizedBox(height: 8),
           for (final s in const [
             'Everything is read and analysed on this phone. Your export is never uploaded.',
-            'Only history files are opened (watched, liked, saved, searches). Private messages and personal details are skipped and never read.',
+            'Only history files are opened (watched, liked, saved, searches). Private messages and personal details are skipped and never read. TikTok puts everything in one file, so for TikTok we pick out only the history sections and ignore the rest, including any messages.',
             'Only a summary is kept, on this phone, for this account. You can delete it any time.',
           ])
             Padding(padding: const EdgeInsets.only(bottom: 4), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [const Padding(padding: EdgeInsets.only(top: 2, right: 8), child: Icon(Icons.check, size: 16)), Expanded(child: Text(s, style: t.textTheme.bodySmall))])),
@@ -182,6 +186,18 @@ class _ImportScreenState extends State<ImportScreen> {
           'Under Multiple formats, change history from HTML to JSON. This matters: HTML dates depend on your language.',
           'Create the export, download the .zip, and add it below. You can add both at once. Each gets its own report.',
         ], "YouTube history lists titles and channels but not watch time, so the report counts videos instead of minutes.", 'https://takeout.google.com/', 'Open Google Takeout'),
+        steps(Icons.music_note_outlined, 'TikTok', const [
+          'In the TikTok app open Profile → menu → Settings and privacy → Account → Download your data.',
+          'Choose All data and the file format JSON, then request the file.',
+          "TikTok prepares it (it can take a few days). Download it soon after it's ready, because the link expires after about four days.",
+          'Add the downloaded .zip (or the user_data JSON file) below.',
+        ], "TikTok's export has links and times for what you watched, liked and searched for, but no captions. The report shows when and how much you watch; what the videos are about comes from the video check."),
+        steps(Icons.facebook, 'Facebook', const [
+          'Open Settings & privacy → Accounts Center → Your information and permissions → Download your information.',
+          "Choose your Facebook profile, then Specific types of information. Tick Likes and reactions, Search history, Saved items, Comments, Pages you follow and any watch or video activity that is offered.",
+          'Set the date range to Last year or All time, the format to JSON, and media quality to the lowest.',
+          "Wait for Facebook's notification, download the .zip, and add it below.",
+        ], "Facebook's folder and file names change often. The screen after you add the file lists exactly what was recognised, so you can see at a glance if something was missed.", 'https://accountscenter.facebook.com/info_and_permissions/dyi/', "Open Facebook's export page"),
         const SizedBox(height: 6),
         const SectionTitle('Add your files'),
         NlCard(
@@ -195,7 +211,7 @@ class _ImportScreenState extends State<ImportScreen> {
                     const SizedBox(height: 12),
                     const Text('Choose your ZIP file', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
                     const SizedBox(height: 2),
-                    Text('Instagram export or Google Takeout (.zip, or the .json files)', textAlign: TextAlign.center, style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+                    Text('Instagram, Google Takeout, TikTok or Facebook export (.zip, or the .json files)', textAlign: TextAlign.center, style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
                   ]),
           ),
         ),
@@ -255,7 +271,7 @@ class _Found extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     final ev = (found['events'] as Map).cast<String, dynamic>();
-    final total = (ev['ig'] as List).length + (ev['yt'] as List).length;
+    final total = ImportStore.platforms.fold<int>(0, (a, k) => a + (ev[k] as List).length);
     final ranges = (found['ranges'] as Map).cast<String, dynamic>();
     final rows = [for (final e in ranges.entries) if (((e.value as Map)['n'] as int) > 0) MapEntry(e.key, (e.value as Map).cast<String, int>())]..sort((a, b) => b.value['n']!.compareTo(a.value['n']!));
     String d(int s) => s == 0 ? '–' : DateFormat.yMMMd().format(DateTime.fromMillisecondsSinceEpoch(s * 1000));
@@ -271,7 +287,14 @@ class _Found extends StatelessWidget {
       if ((found['adsSkipped'] as int) > 0) notes.add('${found['adsSkipped']} entries that were Google Ads were left out of your YouTube history.');
       if (ranges['ytWatch'] == null) notes.add('No YouTube watch history was found. Choose the "history" option in Takeout.');
     }
+    if ((ev['tt'] as List).isNotEmpty) {
+      notes.add("TikTok's export lists the videos you watched and liked as links with times, but no captions. We can show when and how much you watch; what the videos are about needs the video check.");
+      if (ranges['ttView'] == null) notes.add('No TikTok watch history was found in this file.');
+    }
+    if ((ev['fb'] as List).isNotEmpty && ranges['fbWatched'] == null) notes.add('No Facebook watch history was found. Facebook only includes detailed activity if you select it when requesting your information. Likes, searches and saved items still give a picture.');
     if ((found['igHtml'] as int) > 0) notes.add('Some Instagram files are in HTML format and were skipped. Request the export in JSON for the full picture.');
+    if ((found['fbHtml'] as int) > 0) notes.add('Some Facebook files are in HTML format and were skipped. Request the export in JSON for the full picture.');
+    if ((found['ttTxt'] as int) > 0) notes.add('A TikTok text export was skipped. Request your data as JSON to include it.');
     notes.addAll((found['problems'] as List).cast<String>());
 
     return NlCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -283,7 +306,7 @@ class _Found extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 5),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Icon(r.key.startsWith('ig') ? Icons.camera_alt_outlined : Icons.play_circle_outline, size: 18, color: t.colorScheme.onSurfaceVariant),
+            Icon(r.key.startsWith('ig') ? Icons.camera_alt_outlined : r.key.startsWith('tt') ? Icons.music_note_outlined : r.key.startsWith('fb') ? Icons.facebook : Icons.play_circle_outline, size: 18, color: t.colorScheme.onSurfaceVariant),
             const SizedBox(width: 8),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(importLabels[r.key] ?? r.key, style: const TextStyle(fontWeight: FontWeight.w700)), Text('${d(r.value['from']!)} to ${d(r.value['to']!)}', style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant))])),
             Text(NumberFormat.decimalPattern().format(r.value['n']), style: const TextStyle(fontWeight: FontWeight.w800)),

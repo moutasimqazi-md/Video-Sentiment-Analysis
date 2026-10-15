@@ -25,18 +25,19 @@ NL.imp.store = (() => {
   const slim = (e) => ({ s: e.src, k: e.kind, a: e.act, t: e.t, u: e.url, x: (e.text || "").slice(0, 240), b: e.by || "" });
   const unslim = (e) => ({ src: e.s, kind: e.k, act: e.a, t: e.t, url: e.u, text: e.x, by: e.b });
 
-  /** { ig:[], yt:[] } of normalized events for a profile */
+  const SRCS = ["ig", "yt", "tt", "fb"];
+  const emptyEvents = () => Object.fromEntries(SRCS.map((k) => [k, []]));
+  /** { ig:[], yt:[], tt:[], fb:[] } of normalized events for a profile */
   async function getEvents(profile) {
     try {
       const v = await run("readonly", (s) => s.get("items:" + profile));
-      return v ? { ig: (v.ig || []).map(unslim), yt: (v.yt || []).map(unslim) } : { ig: [], yt: [] };
-    } catch (e) { return { ig: [], yt: [] }; }
+      return v ? Object.fromEntries(SRCS.map((k) => [k, (v[k] || []).map(unslim)])) : emptyEvents();
+    } catch (e) { return emptyEvents(); }
   }
-  const putEvents = (profile, ev) => run("readwrite", (s) => s.put({ ig: (ev.ig || []).map(slim), yt: (ev.yt || []).map(slim), savedAt: Date.now() }, "items:" + profile));
+  const putEvents = (profile, ev) => run("readwrite", (s) => s.put({ ...Object.fromEntries(SRCS.map((k) => [k, (ev[k] || []).map(slim)])), savedAt: Date.now() }, "items:" + profile));
   const dropEvents = (profile) => run("readwrite", (s) => s.delete("items:" + profile));
 
   /* One report per profile AND platform: Instagram and YouTube are never merged into a single report. */
-  const SRCS = ["ig", "yt"];
   const key = (p, src) => "imp_" + (p || "me") + "_" + src;
 
   /** Older versions saved one combined report per profile. Split it into one report per platform, once. */
@@ -80,7 +81,7 @@ NL.imp.store = (() => {
     try {
       const ev = await getEvents(profile);
       ev[src] = [];
-      if (ev.ig.length || ev.yt.length) await putEvents(profile, ev); else await dropEvents(profile);
+      if (SRCS.some((k) => ev[k].length)) await putEvents(profile, ev); else await dropEvents(profile);
     } catch (e) { /* nothing stored */ }
   }
 

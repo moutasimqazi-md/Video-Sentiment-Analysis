@@ -73,7 +73,7 @@ Nobody is "local" on a server, so owner-only routes (for example `/api/feedback/
 
 - **Analyses are held in memory per process.** The page polls a job id; if your host runs two or more app processes, a poll can land on the other one and report "Unknown or expired job". cPanel normally runs one. If you see this, ask the host for a single process.
 - **Upload size** is capped at 300 MB by the app; your host's request-body limit may be lower.
-- **Instagram links** from a server's address are often refused by Instagram, and the app says so; YouTube and similar links work. Uploading the file always works.
+- **Links** from a server's address are often refused: Instagram, TikTok and Facebook commonly block hosting addresses (and YouTube sometimes does), and the app says so in plain words. Uploading a screen recording always works. A successful download of a real TikTok or Facebook video from a server was **not** tested; only the failure handling was.
 - Passenger may stop an idle app and start it again on the next visit. Nothing is lost (it is all in `NL_DATA_DIR`); the first request after a stop is slow while the models load.
 
 ## On a VPS or dedicated server (untested)
@@ -81,6 +81,8 @@ Nobody is "local" on a server, so owner-only routes (for example `/api/feedback/
 You can also run `python -m uvicorn neurolens.main:app --host 127.0.0.1 --port 8000` as a service behind Apache or Nginx with the WebSocket upgrade passed through, install `requirements.txt` plus `playwright install chromium --with-deps`, and set `NL_DEPLOYED=1`. That is the only way to get the Instagram features online. It was not tried.
 
 ## What was tested
+
+- **Everything, before this release:** website unit tests (24), backend unit tests (13), the 27-check server smoke test with a real analysis, 36 page loads in a real browser (desktop and phone, no errors, no missing files, no sideways scrolling), 31 browser checks on the Goals tab, 55 browser checks of a four-platform import and every report, and the whole Flutter suite (138 tests plus a clean analyzer). Reports for Instagram and YouTube built from real exports are byte-identical to the previous version.
 
 - **The package itself:** `dist/neurolens-cpanel.zip` was extracted into an empty folder and run through `passenger_wsgi.py` in a fresh environment built only from `requirements-cpanel.txt`: the 27-check smoke test (real analysis included) and the 31-check browser run of the Goals tab on desktop and phone sizes all passed.
 

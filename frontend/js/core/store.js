@@ -7,7 +7,7 @@ NL.PLANS = {
     id: "free", name: "Starter", monthly: 0, yearly: 0, quota: 5, history: 10,
     link: true, export: true, children: 0, weekly: false, seats: 1,
     blurb: "Analyze your own Reels and download a report.",
-    features: ["5 Reel analyses / month", "Paste Instagram Reel links or upload", "Download & print reports", "Emotion timeline + wellbeing signal", "Last 10 analyses saved"],
+    features: ["5 Reel analyses / month", "Paste video links (Instagram, YouTube, TikTok, Facebook) or upload", "Download & print reports", "Emotion timeline + wellbeing signal", "Last 10 analyses saved"],
     off: ["Child monitoring profiles", "Weekly summary reports"],
   },
   pro: {
@@ -162,9 +162,20 @@ NL.sourceUrl = (h) => {
   const u = (h.source && h.source.url) || (h.result && h.result.source && h.result.source.url) || "";
   return /^https?:\/\//i.test(u) ? u : null;
 };
+/** The platforms NeuroLens understands. `src` is the short code used in imported events and saved reports. */
+NL.PLATFORMS = {
+  ig: { name: "Instagram", icon: "instagram", unit: "reel", host: /(^|\.)instagram\.com$/i },
+  yt: { name: "YouTube", icon: "play", unit: "video", host: /(^|\.)(youtube\.com|youtu\.be)$/i },
+  tt: { name: "TikTok", icon: "tiktok", unit: "video", host: /(^|\.)(tiktok\.com|tiktokv\.com)$/i },
+  fb: { name: "Facebook", icon: "facebook", unit: "video", host: /(^|\.)(facebook\.com|fb\.watch|fb\.com)$/i },
+};
+NL.PLAT_ORDER = ["ig", "yt", "tt", "fb"];
+NL.platName = (src) => (NL.PLATFORMS[src] ? NL.PLATFORMS[src].name : "Other");
+/** Which platform a link belongs to: "ig" | "yt" | "tt" | "fb" | "" */
+NL.srcOfUrl = (u) => { try { const h = new URL(u).hostname; return NL.PLAT_ORDER.find((k) => NL.PLATFORMS[k].host.test(h)) || ""; } catch (e) { return ""; } };
 NL.platform = (h) => {
   const u = NL.sourceUrl(h);
-  if (u) return /instagram\.com/i.test(u) ? "Instagram" : /youtu/i.test(u) ? "YouTube" : "Web";
+  if (u) { const k = NL.srcOfUrl(u); return k ? NL.PLATFORMS[k].name : "Web"; }
   const k = (h.source && h.source.kind) || (h.result && h.result.source && h.result.source.kind);
   return k === "upload" ? "Upload" : k === "sample" ? "Sample" : "";
 };

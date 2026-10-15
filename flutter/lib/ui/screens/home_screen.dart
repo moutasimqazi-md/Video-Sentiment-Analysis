@@ -105,7 +105,7 @@ class HomeScreen extends StatelessWidget {
                 Text('Your results and weekly summary appear here. Pick where to begin:', style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
                 const SizedBox(height: 10),
                 _Step(icon: Icons.add_circle_outline, title: 'Analyze a Reel', sub: 'Paste a link or choose a video', onTap: () => context.read<ShellNav>().go(ShellNav.analyze)),
-                _Step(icon: Icons.upload_file_outlined, title: 'Import your history', sub: 'Instagram or YouTube export → habits report', onTap: () => context.read<ShellNav>().go(ShellNav.import)),
+                _Step(icon: Icons.upload_file_outlined, title: 'Import your history', sub: 'Instagram, YouTube, TikTok or Facebook export → habits report', onTap: () => context.read<ShellNav>().go(ShellNav.import)),
                 _Step(icon: Icons.visibility_outlined, title: 'Check a feed', sub: 'Sign in to Instagram and review what it shows', onTap: () => context.read<ShellNav>().go(ShellNav.feed)),
               ]),
             )

@@ -14,7 +14,7 @@
   /* ---------- basics ---------- */
   const who = NL.profiles.name(profile);
   const possessive = who === "Me" ? "Your" : `${who}'s`;
-  const PLAT = { ig: "Instagram", yt: "YouTube" };
+  const PLAT = Object.fromEntries(NL.PLAT_ORDER.map((k) => [k, NL.platName(k)]));
   const plats = Object.keys(report.platforms);
   const nf = (n) => Math.round(n).toLocaleString();
   const pct = (x) => Math.round(x * 100);
@@ -36,7 +36,7 @@
 
   /* ---------- events (browse + deep check), loaded lazily ---------- */
   let eventsCache = null;
-  const loadEvents = async () => (eventsCache = eventsCache || (async () => { const e = await S.getEvents(profile); return { ig: src === "ig" ? e.ig : [], yt: src === "yt" ? e.yt : [] }; })());
+  const loadEvents = async () => (eventsCache = eventsCache || (async () => { const e = await S.getEvents(profile); return Object.fromEntries(S.SRCS.map((k) => [k, k === src ? e[k] : []])); })());
 
   /* ================= OVERVIEW ================= */
   function ring(score, level) {
@@ -85,8 +85,8 @@
   }
 
   /* ================= PLATFORM TABS ================= */
-  const SERIES = { ig: [["likes", "Likes"], ["stories", "Stories viewed"], ["views", "Reels & posts viewed"]], yt: [["views", "Videos watched"]] };
-  const sel = { ig: "likes", yt: "views" };
+  const SERIES = { ig: [["likes", "Likes"], ["stories", "Stories viewed"], ["views", "Reels & posts viewed"]], yt: [["views", "Videos watched"]], tt: [["views", "Videos watched"], ["likes", "Likes"]], fb: [["views", "Videos & reels watched"], ["likes", "Reactions"]] };
+  const sel = { ig: "likes", yt: "views", tt: "views", fb: "views" };
 
   function renderPlatform(p) {
     const P = report.platforms[p], box = $(`panel-${p}`);
@@ -108,7 +108,7 @@
         ${card("Over time", s.days > 1 ? "items per day" : "", `<div id="${p}-daily"></div>`, "span2")}
         ${card("By weekday", "", `<div id="${p}-wd"></div>`)}
         ${Object.keys(s.monthly).length > 1 ? card("By month", "", `<div id="${p}-month"></div>`, "span2") : ""}
-        ${p === "ig" ? igExtras(P) : ytExtras(P)}
+        ${p === "ig" ? igExtras(P) : p === "yt" ? ytExtras(P) : otherExtras(P)}
       </div>`;
     drawSeries(p, s, label);
     NL.hydrateIcons(box);
@@ -128,6 +128,11 @@
     const kinds = P.mix.kinds || {}, mixCard = Object.keys(kinds).length ? card("What you watch", "videos, Shorts, music", `<div id="yt-mix"></div>`) : "";
     const soc = card("Other activity", "", `<ul class="mini-list"><li><span>Subscriptions</span><b>${P.social.subscriptions ? nf(P.social.subscriptions) : "not in export"}</b></li><li><span>Liked videos</span><b>${P.social.liked ? nf(P.social.liked) : "not in export"}</b></li><li><span>Channels watched</span><b>${cr ? nf(cr.unique) : "–"}</b></li></ul>`);
     return chan + mixCard + soc + searchCard(P);
+  }
+  function otherExtras(P) {                                           // TikTok and Facebook
+    const s = P.social || {}, rows = [["Saved", s.saved], ["Comments", s.comments], ["Shared", s.shares], ["Pages followed", s.following]].filter(([, v]) => v);
+    const other = rows.length ? card("Other activity", "", `<ul class="mini-list">${rows.map(([k, v]) => `<li><span>${k}</span><b>${nf(v)}</b></li>`).join("")}</ul>`) : "";
+    return other + searchCard(P);
   }
   const searchCard = (P) => (P.searches.top.length ? card("What you search for", `${nf(P.searches.total)} searches`, `<ul class="mini-list">${P.searches.top.map((t) => `<li><span>${esc(t.q.length > 46 ? t.q.slice(0, 44) + "…" : t.q)}</span><b>${t.n}</b></li>`).join("")}</ul>`) : "");
 
@@ -186,7 +191,11 @@
     const box = $("panel-content");
     const P = report.platforms[cState.platform], Cn = P.content;
     const picker = plats.length > 1 ? `<div class="series-picker chips no-print" role="group" aria-label="Which platform">${plats.map((p) => `<button class="chip" data-cplat="${p}" aria-pressed="${p === cState.platform}">${PLAT[p]}</button>`).join("")}</div>` : "";
-    if (!Cn || !Cn.classified) { box.innerHTML = `${picker}<div class="card empty"><h2 class="h3">Nothing recognised yet</h2><p>We couldn't match any captions or titles to known themes.</p></div>`; return; }
+    if (!Cn || !Cn.classified) {
+      const why = cState.platform === "tt" ? "TikTok's export has no captions, only links and times, so there is nothing to read here. The video check below looks at the videos themselves." : "We couldn't match any captions or titles to known themes. The video check below looks at the videos themselves.";
+      box.innerHTML = `${picker}<div class="card empty"><h2 class="h3">Nothing recognised from text</h2><p style="max-width:520px;margin:8px auto 0">${why}</p></div><div id="deepBox" style="margin-top:20px"></div>`;
+      renderDeep(); NL.hydrateIcons(box); return;
+    }
     const bars = Cn.themes.map((t, i) => `<div class="bar-row ${i === 0 ? "top" : ""}"><span class="emo" aria-hidden="true">${NL.moodEmoji(t.mood)}</span><span class="name">${esc(t.label)}</span><span class="track"><i style="width:${Math.min(100, t.share)}%"></i></span><span class="pct">${t.share.toFixed(0)}%</span></div>`).join("");
     const moods = Object.entries(Cn.moods).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([m, v], i) => `<div class="bar-row ${i === 0 ? "top" : ""}"><span class="emo" aria-hidden="true">${NL.moodEmoji(m)}</span><span class="name">${NL.cap(m)}</span><span class="track"><i style="width:${Math.min(100, v)}%"></i></span><span class="pct">${v.toFixed(0)}%</span></div>`).join("");
     const flagged = Cn.flagged.map((f) => `<div class="flag-item"><div><p>${esc(f.text || "(no caption)")}</p><small>${NL.cap(f.mood)} · ${esc(Cn.themes.find((t) => t.key === f.theme)?.label || f.theme)} · ${NL.fmtDate(f.t * 1000)}</small></div><a class="btn sm ghost" href="${esc(f.url)}" target="_blank" rel="noopener noreferrer" aria-label="Open the original: ${esc((f.text || "").slice(0, 40))} (opens in a new tab)">${NL.icon("external", 15)}Open</a></div>`).join("");
@@ -236,11 +245,11 @@
     if (left <= 0) return NL.upgradeModal(`You've used all ${NL.plan.get().quota} analyses on the ${NL.plan.get().name} plan this month.`);
     n = Math.min(n, left);
     const ev = await loadEvents();
-    const ok = (e) => ["like", "save", "view"].includes(e.act) && ((e.src === "ig" && /instagram\.com\/(reel|reels|p)\//i.test(e.url)) || (e.src === "yt" && /youtube\.com\/watch\?v=/i.test(e.url)));
+    const ok = (e) => ["like", "save", "view"].includes(e.act) && ((e.src === "ig" && /instagram\.com\/(reel|reels|p)\//i.test(e.url)) || (e.src === "yt" && /youtube\.com\/watch\?v=/i.test(e.url)) || (e.src === "tt" && /tiktok(v)?\.com\//i.test(e.url)) || (e.src === "fb" && /(facebook\.com\/(reel|reels|watch|[^/]+\/videos)|fb\.watch)/i.test(e.url)));
     const seen = new Set(), picks = [];
-    const pools = [ev.ig.filter(ok), ev.yt.filter(ok)].map((a) => a.sort((x, y) => y.t - x.t));
-    for (let i = 0; picks.length < n && (pools[0].length || pools[1].length); i++) {
-      const e = pools[i % 2].shift(); if (!e) { if (!pools[0].length && !pools[1].length) break; continue; }
+    const pools = S.SRCS.map((k) => (ev[k] || []).filter(ok).sort((x, y) => y.t - x.t)).filter((a) => a.length);
+    for (let i = 0; picks.length < n && pools.some((a) => a.length); i++) {
+      const e = pools[i % pools.length].shift(); if (!e) continue;
       if (!seen.has(e.url)) { seen.add(e.url); picks.push(e); }
     }
     if (!picks.length) return NL.toast("No analyzable links found in this import");
@@ -296,7 +305,7 @@
   function goalGroup(g, res) {
     const label = `${g.label}: ${pct(g.share.supports)}% helps your goals, ${pct(g.share.neutral)}% neutral, ${pct(g.share.against)}% you chose to see less`;
     const topics = g.topics.slice(0, 8).map((t, i) => `<div class="bar-row ${i === 0 ? "top" : ""}"><span class="emo" aria-hidden="true"></span><span class="name">${esc(t.label)}<small>${stanceTxt[t.stance]}</small></span><span class="track"><i class="${t.stance}" style="width:${Math.min(100, t.share * 100)}%"></i></span><span class="pct">${pct(t.share)}%</span></div>`).join("");
-    const ex = g.examples.map((f) => `<div class="flag-item"><div><p>${esc(f.text || "(no caption)")}</p><small>${esc(f.label)} · ${NL.fmtDate(f.t * 1000)}</small></div><a class="btn sm ghost" href="${esc(f.url)}" target="_blank" rel="noopener noreferrer" aria-label="Open the original: ${esc((f.text || "").slice(0, 40))} (opens in a new tab)">${NL.icon("external", 15)}Open</a></div>`).join("");
+    const ex = g.examples.map((f) => `<div class="flag-item"><div><p>${esc(f.text || "(no caption)")}</p><small>${esc(f.label)} · ${NL.fmtDate(f.t * 1000)}</small></div>${f.url ? `<a class="btn sm ghost" href="${esc(f.url)}" target="_blank" rel="noopener noreferrer" aria-label="Open the original: ${esc((f.text || "").slice(0, 40))} (opens in a new tab)">${NL.icon("external", 15)}Open</a>` : ""}</div>`).join("");
     const fnds = GL.findings(g, res).map(finding).join("");
     return `<section class="card goal-group"><div class="card-head"><h3 class="h-card">${esc(g.label)}</h3><span class="muted" style="font-size:12.5px">${nf(g.classified)} of ${nf(g.n)} placed on a topic (${pct(g.coverage)}%) · ${g.days} day${g.days === 1 ? "" : "s"}</span></div>
       ${g.classified ? alignBar(g.share, label) : ""}
@@ -332,7 +341,7 @@
     if (!gSel.goals.length && !gSel.avoid.length) { out.innerHTML = `<div class="card empty"><div class="e-ico"><i data-icon="target" data-size="32"></i></div><h2 class="h3">Choose a goal to begin</h2><p style="max-width:460px;margin:8px auto 0">For example "Grow in AI & tech" or "Protect my relationship". Nothing is sent anywhere: this is worked out in your browser.</p></div>`; NL.hydrateIcons(out); return; }
     const ev = await loadEvents();
     if (token !== gToken) return; // a newer render started while the items loaded
-    const res = GL.evaluate([...ev.ig, ...ev.yt], gSel);
+    const res = GL.evaluate(S.SRCS.flatMap((k) => ev[k] || []), gSel);
     if (!res.groups.length) { out.innerHTML = `<div class="card empty"><h2 class="h3">No dated items to look at</h2><p>This import has no watched or liked items with dates.</p></div>`; return; }
     out.innerHTML = `<div class="dgrid">${res.groups.map((g) => goalGroup(g, res)).join("")}</div>
       <section class="card" style="margin-top:20px"><h3 class="h-card">How to read this</h3>
@@ -354,7 +363,7 @@
     const box = $("panel-browse");
     box.innerHTML = `<p class="muted">Loading your items…</p>`;
     const ev = await loadEvents();
-    const all = [...ev.ig, ...ev.yt].filter((e) => e.url && !["profile", "search"].includes(e.kind) && e.act !== "hide").sort((a, b) => b.t - a.t);
+    const all = S.SRCS.flatMap((k) => ev[k] || []).filter((e) => e.url && !["profile", "search"].includes(e.kind) && e.act !== "hide").sort((a, b) => b.t - a.t);
     if (!all.length) { box.innerHTML = `<div class="card empty"><h2 class="h3">No browsable items</h2><p>Re-import to list your items here.</p></div>`; return; }
     const kinds = [...new Set(all.map((e) => e.kind))], acts = [...new Set(all.map((e) => e.act))];
     const draw = () => {
@@ -393,10 +402,10 @@
   }
 
   /* ================= tabs ================= */
-  const TABS = [["overview", "Overview", "chart"], ...plats.map((p) => [p, PLAT[p], p === "ig" ? "instagram" : "play"]), ["content", "Content", "brain"], ["goals", "Goals", "target"], ["browse", "Browse items", "film"]];
+  const TABS = [["overview", "Overview", "chart"], ...plats.map((p) => [p, NL.PLATFORMS[p].name, NL.PLATFORMS[p].icon]), ["content", "Content", "brain"], ["goals", "Goals", "target"], ["browse", "Browse items", "film"]];
   let current = TABS.some(([k]) => k === params.get("tab")) ? params.get("tab") : "overview";
   const rendered = new Set();
-  const renderers = { overview: renderOverview, ig: () => renderPlatform("ig"), yt: () => renderPlatform("yt"), content: renderContent, goals: () => renderGoals(), browse: renderBrowse };
+  const renderers = { overview: renderOverview, ...Object.fromEntries(NL.PLAT_ORDER.map((k) => [k, () => renderPlatform(k)])), content: renderContent, goals: () => renderGoals(), browse: renderBrowse };
 
   $("hbTabs").innerHTML = TABS.map(([k, l, i]) => `<button class="hb-tab" role="tab" id="tab-${k}" aria-controls="panel-${k}" aria-selected="${k === current}" tabindex="${k === current ? 0 : -1}">${NL.icon(i, 16)}${l}</button>`).join("");
   function show(k, focus) {

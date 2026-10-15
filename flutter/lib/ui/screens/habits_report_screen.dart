@@ -101,7 +101,7 @@ class HabitsReportScreen extends StatelessWidget {
             child: Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: () => Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => HabitsReportScreen(profile: profile, src: others.first))), icon: const Icon(Icons.swap_horiz), label: Text('Open the separate ${ImportStore.platformNames[others.first]} report'))),
           ),
         if (findings.isEmpty)
-          card('Not enough to judge', Text('These files have too little history for a verdict. For Instagram include Likes, Stories and Ads information; for YouTube include History (JSON).', style: t.textTheme.bodyMedium))
+          card('Not enough to judge', Text('These files have too little history for a verdict. For Instagram include Likes, Stories and Ads information; for YouTube include History; for TikTok request all data; for Facebook include Likes and reactions, Search history and watch activity (JSON).', style: t.textTheme.bodyMedium))
         else
           for (final f in findings.cast<Map<String, dynamic>>()) _Finding(f: f),
         const SizedBox(height: 4),

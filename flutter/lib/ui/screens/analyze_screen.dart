@@ -183,7 +183,7 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text('In Instagram: open the Reel, tap Share, then Copy link. Private account? Screen-record it and use Files.', style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+                Text('Works with Instagram, YouTube, TikTok and Facebook: Share, then Copy link. If a link fails, screen-record it and use Files.', style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
               ] else ...[
                 Row(children: [
                   Expanded(child: OutlinedButton.icon(onPressed: _pickVideo, icon: const Icon(Icons.videocam_outlined), label: const Text('Video'))),

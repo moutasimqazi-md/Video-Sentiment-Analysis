@@ -2,7 +2,8 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   const P = NL.imp.parse, S = NL.imp.store;
-  let pending = null;   // { events:{ig,yt}, ranges, recognized, intake, problems }
+  let pending = null;   // { events:{ig,yt,tt,fb}, ranges, recognized, intake, problems }
+  const nameList = (a) => (a.length < 2 ? a.join("") : `${a.slice(0, -1).join(", ")} and ${a[a.length - 1]}`);
 
   /* ---------- helpers ---------- */
   const fmt = (t) => (t ? NL.fmtDate(t * 1000) : "–");
@@ -12,7 +13,7 @@
     if (stage) $("readStage").textContent = stage;
     if (frac != null) { $("readProg").style.width = Math.round(frac * 100) + "%"; $("readProgWrap").setAttribute("aria-valuenow", String(Math.round(frac * 100))); }
   }
-  const platformOf = (cat) => (cat.startsWith("ig") ? "Instagram" : "YouTube");
+  const platformOf = (cat) => NL.platName(cat.slice(0, 2));
 
   /* ---------- target profile ---------- */
   const sel = $("targetProfile");
@@ -25,12 +26,11 @@
   async function syncMerge() {
     if (!pending) return;
     const ex = await S.getEvents(sel.value);
-    const have = ["ig", "yt"].filter((k) => ex[k].length && !pending.events[k].length);
-    const replace = ["ig", "yt"].filter((k) => ex[k].length && pending.events[k].length);
-    const name = { ig: "Instagram", yt: "YouTube" };
+    const have = S.SRCS.filter((k) => ex[k].length && !pending.events[k].length);
+    const replace = S.SRCS.filter((k) => ex[k].length && pending.events[k].length);
     const parts = [];
-    if (have.length) parts.push(`This report will also include your earlier ${have.map((k) => name[k]).join(" and ")} import.`);
-    if (replace.length) parts.push(`Your earlier ${replace.map((k) => name[k]).join(" and ")} import will be replaced by this newer one, and the report will show what changed.`);
+    if (have.length) parts.push(`Your earlier ${nameList(have.map(NL.platName))} import${have.length > 1 ? "s stay" : " stays"} as ${have.length > 1 ? "separate reports" : "a separate report"}.`);
+    if (replace.length) parts.push(`Your earlier ${nameList(replace.map(NL.platName))} import will be replaced by this newer one, and the report will show what changed.`);
     $("mergeNote").hidden = !parts.length;
     $("mergeText").textContent = parts.join(" ");
   }
@@ -44,12 +44,14 @@
       if (!intake.sources.length) {
         busy(false);
         if (intake.igHtml) return showErr("This looks like an Instagram export in HTML format. Please request it again and choose JSON as the format.");
-        if (!intake.totalEntries) return showErr("We couldn't find any files to read. Choose a .zip from Instagram or Google Takeout, or the unzipped files.");
-        return showErr("None of the history files we know were found in these files. For Instagram, include Likes, Saved, Story interactions and Ads information (posts / videos viewed). For YouTube, include History. Use JSON format.");
+        if (intake.fbHtml) return showErr("This looks like a Facebook export in HTML format. Please request it again and choose JSON as the format.");
+        if (intake.ttTxt) return showErr("This looks like a TikTok export in text format. Please request your data again and choose JSON as the file format.");
+        if (!intake.totalEntries) return showErr("We couldn't find any files to read. Choose a .zip from Instagram, Google Takeout, TikTok or Facebook, or the unzipped files.");
+        return showErr("None of the history files we know were found in these files. For Instagram, include Likes, Saved, Story interactions and Ads information (posts / videos viewed). For YouTube, include History. For TikTok, request all data as JSON. For Facebook, include Likes and reactions, Search history and Saved items (and watch activity if offered). Use JSON format.");
       }
       const parsed = await P.run(intake.sources, ({ stage, done, total }) => busy(true, stage + "…", 0.1 + 0.85 * (done / Math.max(total, 1))));
       busy(false);
-      if (!parsed.events.ig.length && !parsed.events.yt.length) return showErr("The files were read but contained no history entries. " + (parsed.problems[0] || ""));
+      if (!S.SRCS.some((k) => parsed.events[k].length)) return showErr("The files were read but contained no history entries. " + (parsed.problems[0] || ""));
       pending = { ...parsed, intake };
       renderFound();
       syncConsent();
@@ -65,7 +67,7 @@
   function renderFound() {
     const { recognized, ranges, intake, problems, adsSkipped, events } = pending;
     const rows = Object.entries(ranges).filter(([, r]) => r.n > 0).sort((a, b) => b[1].n - a[1].n);
-    const total = events.ig.length + events.yt.length;
+    const total = S.SRCS.reduce((n, k) => n + events[k].length, 0);
     $("foundSummary").textContent = `Found ${total.toLocaleString()} history items across ${rows.length} kinds of data. ${intake.ignoredPrivate ? `${intake.ignoredPrivate.toLocaleString()} private files (messages and personal details) were ignored and never read.` : ""}`;
     $("foundTable").innerHTML = `<caption class="sr-only">Data found in your export</caption><thead><tr><th scope="col">Source</th><th scope="col">Data</th><th scope="col">Items</th><th scope="col">From</th><th scope="col">To</th></tr></thead><tbody>${rows.map(([cat, r]) => `<tr><th scope="row">${platformOf(cat)}</th><td>${NL.esc(P.LABELS[cat])}</td><td>${r.n.toLocaleString()}</td><td>${fmt(r.from)}</td><td>${fmt(r.to)}</td></tr>`).join("")}</tbody>`;
     const notes = [];
@@ -78,6 +80,13 @@
       if (adsSkipped) notes.push(`${adsSkipped.toLocaleString()} entries that were Google Ads were left out of your YouTube history.`);
       if (!ranges.ytWatch) notes.push("No YouTube watch history was found. Choose the \"history\" option in Takeout.");
     }
+    if (events.tt.length) {
+      notes.push("TikTok's export lists the videos you watched and liked as links with times, but no captions. We can show when and how much you watch; what the videos are about needs the video check (Content tab).");
+      if (!ranges.ttView) notes.push("No TikTok watch history was found in this file.");
+    }
+    if (events.fb.length && !ranges.fbWatched) notes.push("No Facebook watch history was found. Facebook only includes detailed activity if you select it when requesting your information. Likes, searches and saved items still give a picture.");
+    if (intake.fbHtml) notes.push("Some Facebook files are in HTML format and were skipped. Request the export in JSON for the full picture.");
+    if (intake.ttTxt) notes.push("A TikTok text export was skipped. Request your data as JSON to include it.");
     if (pending.htmlDateProblems) notes.push(`${pending.htmlDateProblems} entries had dates we couldn't read. For the most accurate result, export YouTube history as JSON.`);
     problems.forEach((p) => notes.push(p));
     if (intake.igHtml) notes.push("Some Instagram files are in HTML format and were skipped. Request the export in JSON for the full picture.");
@@ -95,7 +104,7 @@
     busy(true, "Building your report…", 0.97);
     try {
       const existing = await S.getEvents(profile);
-      const merged = { ig: pending.events.ig.length ? pending.events.ig : existing.ig, yt: pending.events.yt.length ? pending.events.yt : existing.yt };
+      const merged = Object.fromEntries(S.SRCS.map((k) => [k, pending.events[k].length ? pending.events[k] : existing[k]]));
       const meta = { files: pending.intake.files, ignoredPrivate: pending.intake.ignoredPrivate, ranges: pending.ranges };
       await new Promise((r) => setTimeout(r, 30));
       await S.putEvents(profile, merged);
@@ -104,7 +113,7 @@
       for (const src of built) S.saveReport(profile, src, NL.imp.habits.analyze({ [src]: merged[src] }, meta));
       if (built.length === 1) { location.href = `habits.html?profile=${encodeURIComponent(profile)}&src=${built[0]}`; return; }
       pending = null; $("foundPanel").hidden = true; busy(false); $("buildBtn").disabled = false; $("importFiles").value = "";
-      renderSaved(); NL.toast("Two separate reports were created");
+      renderSaved(); NL.toast(`${built.length} separate reports were created`);
       $("savedSection").scrollIntoView({ block: "start" });
     } catch (e) {
       busy(false); $("buildBtn").disabled = false;
@@ -129,7 +138,7 @@
     const items = S.allReports();
     $("savedSection").hidden = !items.length;
     $("savedList").innerHTML = items.map(({ id, src, report: r }) => {
-      const who = NL.profiles.name(id), plat = src === "ig" ? "Instagram" : "YouTube";
+      const who = NL.profiles.name(id), plat = NL.platName(src);
       const lvl = r.overall.level;
       return `<article class="card saved-card"><div class="saved-main"><b>${NL.esc(who === "Me" ? `My ${plat} report` : `${who}'s ${plat} report`)}</b>
         <span class="muted">Imported ${NL.fmtDate(r.createdAt)}</span></div>

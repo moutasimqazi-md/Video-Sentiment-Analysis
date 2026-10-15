@@ -4,7 +4,7 @@ import 'dart:math' as math;
 
 import 'parse.dart';
 
-/// Habits analysis + judgement over imported Instagram / YouTube history (port of the website's rules, same thresholds).
+/// Habits analysis + judgement over imported Instagram / YouTube / TikTok / Facebook history (port of the website's rules, same thresholds).
 /// Every export covers a different window, so each metric comes from one named series and each finding states its basis and confidence.
 
 typedef Json = Map<String, dynamic>;
@@ -17,6 +17,10 @@ const habitRules = <Json>[
   {'platform': 'Both', 'what': 'Unusually heavy days (3× your normal, per 30 days)', 'bands': '< 0.5 fine · 0.5–2 · 2–5 · > 5'},
   {'platform': 'Instagram', 'what': 'Longest unbroken run (a gap of 10 minutes ends it)', 'bands': '< 30 min fine · 30–60 · 60–120 · > 120'},
   {'platform': 'YouTube', 'what': 'Longest unbroken run (a gap of 30 minutes ends it)', 'bands': '< 60 min fine · 60–120 · 120–240 · > 240'},
+  {'platform': 'TikTok', 'what': 'Videos watched on a typical active day', 'bands': '< 30 fine · 30–80 · 80–160 · > 160'},
+  {'platform': 'Facebook', 'what': 'Videos and reels watched on a typical active day', 'bands': '< 15 fine · 15–40 · 40–80 · > 80'},
+  {'platform': 'TikTok', 'what': 'Longest unbroken run (a gap of 10 minutes ends it)', 'bands': '< 30 min fine · 30–60 · 60–120 · > 120'},
+  {'platform': 'Facebook', 'what': 'Longest unbroken run (a gap of 30 minutes ends it)', 'bands': '< 60 min fine · 60–120 · 120–240 · > 240'},
   {'platform': 'YouTube', 'what': 'Share of videos from your 10 most-watched channels', 'bands': '< 50% fine · 50–70% · > 70%'},
   {'platform': 'Both', 'what': 'Last 30 days vs the 30 before', 'bands': '< +40% fine · +40–100% · > +100%'},
   {'platform': 'Both', 'what': 'Share of captions / titles with a heavy emotional tone', 'bands': '< 10% fine · 10–20% · 20–30% · > 30%'},
@@ -268,6 +272,24 @@ Json _judge(String platform, Json P) {
         'tip': p > 0 ? 'Use YouTube\'s "Remind me to take a break" and turn autoplay off.' : ''});
     }
   }
+  if (platform == 'tt') {
+    final V = S['views'];
+    if (V != null && (V['n'] as int) >= 30) {
+      final m = (V['perActiveDay'] as double).round(), p = m < 30 ? 0 : m < 80 ? 5 : m < 160 ? 12 : 20;
+      add({'id': 'tt-views', 'severity': sev(p, 20, 12), 'title': p >= 12 ? 'Heavy watching' : p > 0 ? 'Fairly active watching' : 'Moderate watching', 'penalty': p, 'confidence': _conf(V['n'] as int, V['days'] as int), 'basis': basis(V, 'videos watched'),
+        'text': "Active on ${V['activeDays']} of ${V['days']} days, with about $m videos on a typical active day (busiest day ${V['maxDay']}). TikTok doesn't record watch time, so this counts videos.",
+        'tip': p > 0 ? "TikTok's Digital Wellbeing settings have a daily screen time limit and screen time breaks. Turning them on makes the stopping point visible." : ''});
+    }
+  }
+  if (platform == 'fb') {
+    final V = S['views'];
+    if (V != null && (V['n'] as int) >= 30) {
+      final m = (V['perActiveDay'] as double).round(), p = m < 15 ? 0 : m < 40 ? 5 : m < 80 ? 12 : 20;
+      add({'id': 'fb-views', 'severity': sev(p, 20, 12), 'title': p >= 12 ? 'Frequent watching' : p > 0 ? 'Regular watching' : 'Light watching', 'penalty': p, 'confidence': _conf(V['n'] as int, V['days'] as int), 'basis': basis(V, 'videos and reels watched'),
+        'text': "Active on ${V['activeDays']} of ${V['days']} days, with about $m videos and reels on a typical active day (busiest day ${V['maxDay']}). Facebook doesn't record watch time, so this counts videos.",
+        'tip': p > 0 ? "Facebook has a daily time reminder in its settings. It's a gentle way to notice when a session has run long." : ''});
+    }
+  }
   // night-time: judge on the series with the most data
   final present = S.entries.where((e) => e.value != null).toList()..sort((a, b) => (b.value!['n'] as int).compareTo(a.value!['n'] as int));
   if (present.isNotEmpty && (present.first.value!['n'] as int) >= 100) {
@@ -276,7 +298,7 @@ Json _judge(String platform, Json P) {
     add({'id': 'night', 'severity': sev(p, 20, 8), 'title': p >= 8 ? 'Late-night activity' : p > 0 ? 'Some late-night activity' : 'Little late-night activity', 'penalty': p, 'confidence': _conf(main['n'] as int, main['days'] as int),
       'basis': basis(main, name == 'likes' ? 'likes' : name == 'stories' ? 'stories' : 'views'),
       'text': '${_pct(ns)}% of activity happens between midnight and 5am. The busiest hour is ${hourLabel(main['peakHour'] as int)}, and ${weekdayNames[main['peakWeekday'] as int]} is the busiest day.',
-      'tip': p > 0 ? 'Set a wind-down time and use ${platform == 'ig' ? 'Sleep mode' : 'Bedtime reminders'} so scrolling stops before sleep.' : 'A healthy pattern for sleep.'});
+      'tip': p > 0 ? 'Set a wind-down time and use ${platform == 'ig' ? 'Sleep mode' : platform == 'tt' ? "TikTok's sleep reminders" : 'Bedtime reminders'} so scrolling stops before sleep.' : 'A healthy pattern for sleep.'});
   }
   // binge days
   final bs = S.values.whereType<Json>().where((v) => (v['days'] as int) >= 7 && (v['n'] as int) >= 40).toList();
@@ -294,7 +316,8 @@ Json _judge(String platform, Json P) {
   final sv = S['views'];
   final lg = sv == null ? null : (sv['sessions'] as Map)['longest'] as Map?;
   if (sv != null && (sv['n'] as int) >= 40 && lg != null) {
-    final m = lg['min'] as double, lim = platform == 'ig' ? [30, 60, 120] : [60, 120, 240], pts = platform == 'ig' ? [0, 4, 8, 12] : [0, 5, 10, 15];
+    final short = platform == 'ig' || platform == 'tt'; // short-video apps: runs are judged tighter than YouTube or Facebook
+    final m = lg['min'] as double, lim = short ? [30, 60, 120] : [60, 120, 240], pts = short ? [0, 4, 8, 12] : [0, 5, 10, 15];
     final p = m < lim[0] ? pts[0] : m < lim[1] ? pts[1] : m < lim[2] ? pts[2] : pts[3];
     add({'id': 'session', 'severity': sev(p, pts[3], pts[2]), 'title': p >= 8 ? 'Long unbroken sessions' : p > 0 ? 'Some long sessions' : 'Sessions stay short', 'penalty': p, 'confidence': _conf(sv['n'] as int, sv['days'] as int), 'basis': basis(sv, 'timestamped views'),
       'text': 'Longest unbroken run: about ${m.round()} minutes (${lg['n']} items) on ${_friendly(lg['date'] as String)}. The median of ${_nf((sv['sessions'] as Map)['count'] as int)} sessions is ${_mins((sv['sessions'] as Map)['medianMin'] as double)}.',
@@ -353,6 +376,16 @@ Json _platformReport(String platform, List<Ev> events, _Themes themes) {
     };
     P['social'] = {'following': where((e) => e['act'] == 'follow').length, 'saved': where((e) => e['act'] == 'save').length, 'comments': where((e) => e['act'] == 'comment').length};
     P['content'] = themes.summarize(where((e) => const ['like', 'save', 'view'].contains(e['act']) && (e['text'] as String).isNotEmpty).toList());
+  } else if (platform == 'tt' || platform == 'fb') {
+    final tt = platform == 'tt';
+    final views = where((e) => e['act'] == 'view').toList();
+    series['views'] = _stats(views, gapSec: tt ? 600 : 1800, minBinge: tt ? 80 : 60);
+    series['likes'] = _stats(where((e) => e['act'] == 'like').toList(), gapSec: tt ? 600 : 1800, minBinge: 60);
+    P['mix'] = {'views': _countBy(views, (e) => e['kind'] as String), 'likes': _countBy(where((e) => e['act'] == 'like'), (e) => e['kind'] as String)};
+    P['searches'] = {'total': where((e) => e['act'] == 'search').length, 'top': _topTerms(where((e) => e['act'] == 'search'), 8)};
+    P['social'] = {'saved': where((e) => e['act'] == 'save').length, 'comments': where((e) => e['act'] == 'comment').length, 'shares': where((e) => e['act'] == 'share').length, 'following': where((e) => e['act'] == 'follow').length};
+    // TikTok exports have no captions, so this is mostly empty there; Facebook titles and search words do give something to read
+    P['content'] = themes.summarize(where((e) => const ['like', 'save', 'view'].contains(e['act']) && (e['text'] as String).isNotEmpty).toList());
   } else {
     final views = where((e) => e['act'] == 'view' && e['kind'] != 'music').toList();
     series['views'] = _stats(views, gapSec: 1800, minBinge: 60);
@@ -388,7 +421,7 @@ Json snapshotOf(Json r) {
   return out;
 }
 
-/// One report for one platform; Instagram and YouTube are never combined.
+/// One report for one platform; platforms are never combined.
 Json analyzePlatform(String platform, List<Ev> events, Json lexicon, Json meta) {
   final r = <String, dynamic>{'version': 2, 'createdAt': DateTime.now().millisecondsSinceEpoch, 'meta': meta, 'platforms': {platform: _platformReport(platform, events, _Themes(lexicon))}};
   final v = ((r['platforms'] as Map)[platform] as Map)['verdict'] as Map;

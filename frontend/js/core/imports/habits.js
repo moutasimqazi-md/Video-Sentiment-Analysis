@@ -1,4 +1,4 @@
-/* Habits analysis + judgement over imported Instagram / YouTube history.
+/* Habits analysis + judgement over imported Instagram / YouTube / TikTok / Facebook history.
    Every export covers a different window (e.g. 12 months of likes but only 7 days of watched reels), so each metric comes from one
    named *series* and every finding states its basis and confidence. Thresholds are conservative and listed in `RULES` (shown to the user). */
 window.NL = window.NL || {};
@@ -62,6 +62,10 @@ NL.imp.habits = (() => {
     { id: "binge", platform: "Both", what: "Unusually heavy days (3× your normal, per 30 days)", bands: "< 0.5 fine · 0.5–2 · 2–5 · > 5" },
     { id: "session-ig", platform: "Instagram", what: "Longest unbroken run (a gap of 10 minutes ends it)", bands: "< 30 min fine · 30–60 · 60–120 · > 120" },
     { id: "session-yt", platform: "YouTube", what: "Longest unbroken run (a gap of 30 minutes ends it)", bands: "< 60 min fine · 60–120 · 120–240 · > 240" },
+    { id: "tt-views", platform: "TikTok", what: "Videos watched on a typical active day", bands: "< 30 fine · 30–80 · 80–160 · > 160" },
+    { id: "fb-views", platform: "Facebook", what: "Videos and reels watched on a typical active day", bands: "< 15 fine · 15–40 · 40–80 · > 80" },
+    { id: "session-tt", platform: "TikTok", what: "Longest unbroken run (a gap of 10 minutes ends it)", bands: "< 30 min fine · 30–60 · 60–120 · > 120" },
+    { id: "session-fb", platform: "Facebook", what: "Longest unbroken run (a gap of 30 minutes ends it)", bands: "< 60 min fine · 60–120 · 120–240 · > 240" },
     { id: "variety", platform: "YouTube", what: "Share of videos from your 10 most-watched channels", bands: "< 50% fine · 50–70% · > 70%" },
     { id: "trend", platform: "Both", what: "Last 30 days vs the 30 before", bands: "< +40% fine · +40–100% · > +100%" },
     { id: "tone", platform: "Both", what: "Share of captions / titles with a heavy emotional tone", bands: "< 10% fine · 10–20% · 20–30% · > 30%" },
@@ -100,6 +104,24 @@ NL.imp.habits = (() => {
           tip: p ? "Use YouTube's \"Remind me to take a break\" and turn autoplay off." : "" });
       }
     }
+    if (platform === "tt") {
+      const V = S.views;
+      if (V && V.n >= 30) {
+        const m = Math.round(V.perActiveDay), p = m < 30 ? 0 : m < 80 ? 5 : m < 160 ? 12 : 20;
+        add({ id: "tt-views", severity: sev(p, 20, 12), title: p >= 12 ? "Heavy watching" : p ? "Fairly active watching" : "Moderate watching", penalty: p, confidence: conf(V.n, V.days), basis: basis(V, "videos watched"),
+          text: `Active on ${V.activeDays} of ${V.days} days, with about ${m} videos on a typical active day (busiest day ${V.maxDay}). TikTok doesn't record watch time, so this counts videos.`,
+          tip: p ? "TikTok's Digital Wellbeing settings have a daily screen time limit and screen time breaks. Turning them on makes the stopping point visible." : "" });
+      }
+    }
+    if (platform === "fb") {
+      const V = S.views;
+      if (V && V.n >= 30) {
+        const m = Math.round(V.perActiveDay), p = m < 15 ? 0 : m < 40 ? 5 : m < 80 ? 12 : 20;
+        add({ id: "fb-views", severity: sev(p, 20, 12), title: p >= 12 ? "Frequent watching" : p ? "Regular watching" : "Light watching", penalty: p, confidence: conf(V.n, V.days), basis: basis(V, "videos and reels watched"),
+          text: `Active on ${V.activeDays} of ${V.days} days, with about ${m} videos and reels on a typical active day (busiest day ${V.maxDay}). Facebook doesn't record watch time, so this counts videos.`,
+          tip: p ? "Facebook has a daily time reminder in its settings. It's a gentle way to notice when a session has run long." : "" });
+      }
+    }
     // night-time: judge on the series with the most data
     const main = Object.values(S).filter(Boolean).sort((a, b) => b.n - a.n)[0];
     const mainName = Object.entries(S).find(([, v]) => v === main)?.[0];
@@ -107,7 +129,7 @@ NL.imp.habits = (() => {
       const ns = main.nightShare, p = ns < 0.05 ? 0 : ns < 0.1 ? 4 : ns < 0.15 ? 8 : ns < 0.25 ? 14 : ns < 0.35 ? 20 : 25;
       add({ id: "night", severity: sev(p, 20, 8), title: p >= 8 ? "Late-night activity" : p ? "Some late-night activity" : "Little late-night activity", penalty: p, confidence: conf(main.n, main.days), basis: basis(main, mainName === "likes" ? "likes" : mainName === "stories" ? "stories" : "views"),
         text: `${pct(ns)}% of activity happens between midnight and 5am. The busiest hour is ${hourLabel(main.peakHour)}, and ${WD[main.peakWeekday]} is the busiest day.`,
-        tip: p ? `Set a wind-down time and use ${platform === "ig" ? "Sleep mode" : "Bedtime reminders"} so scrolling stops before sleep.` : "A healthy pattern for sleep." });
+        tip: p ? `Set a wind-down time and use ${platform === "ig" ? "Sleep mode" : platform === "tt" ? "TikTok's sleep reminders" : "Bedtime reminders"} so scrolling stops before sleep.` : "A healthy pattern for sleep." });
     }
     // binge days
     const bs = Object.entries(S).filter(([, v]) => v && v.days >= 7 && v.n >= 40);
@@ -122,7 +144,8 @@ NL.imp.habits = (() => {
     // longest unbroken run (only where views are timestamped densely)
     const sv = platform === "ig" ? S.views : S.views;
     if (sv && sv.n >= 40 && sv.sessions.longest) {
-      const m = sv.sessions.longest.min, lim = platform === "ig" ? [30, 60, 120] : [60, 120, 240], pts = platform === "ig" ? [0, 4, 8, 12] : [0, 5, 10, 15];
+      const short = platform === "ig" || platform === "tt";   // short-video apps: runs are judged tighter than YouTube or Facebook
+      const m = sv.sessions.longest.min, lim = short ? [30, 60, 120] : [60, 120, 240], pts = short ? [0, 4, 8, 12] : [0, 5, 10, 15];
       const p = m < lim[0] ? pts[0] : m < lim[1] ? pts[1] : m < lim[2] ? pts[2] : pts[3];
       add({ id: "session", severity: sev(p, pts[3], pts[2]), title: p >= 8 ? "Long unbroken sessions" : p ? "Some long sessions" : "Sessions stay short", penalty: p, confidence: conf(sv.n, sv.days), basis: basis(sv, "timestamped views"),
         text: `Longest unbroken run: about ${Math.round(m)} minutes (${sv.sessions.longest.n} items) on ${friendly(sv.sessions.longest.date)}. The median of ${nf(sv.sessions.count)} sessions is ${mins(sv.sessions.medianMin)}.`,
@@ -172,6 +195,16 @@ NL.imp.habits = (() => {
       P.controls = { notInterested: events.filter((e) => e.act === "hide" && e.kind === "post").length, topicsHidden: events.filter((e) => e.act === "hide" && e.kind === "profile").map((e) => e.text).filter(Boolean).slice(0, 12), ads: events.filter((e) => e.act === "ad").length };
       P.social = { following: events.filter((e) => e.act === "follow").length, saved: events.filter((e) => e.act === "save").length, comments: events.filter((e) => e.act === "comment").length };
       P.content = NL.imp.themes.summarize(events.filter((e) => ["like", "save", "view"].includes(e.act) && e.text));
+    } else if (platform === "tt" || platform === "fb") {
+      const tt = platform === "tt";
+      const views = events.filter((e) => e.act === "view");
+      P.series.views = stats(views, { gapSec: tt ? 600 : 1800, minBinge: tt ? 80 : 60 });
+      P.series.likes = stats(events.filter((e) => e.act === "like"), { gapSec: tt ? 600 : 1800, minBinge: 60 });
+      P.mix = { views: countBy(views, (e) => e.kind), likes: countBy(events.filter((e) => e.act === "like"), (e) => e.kind) };
+      P.searches = { total: events.filter((e) => e.act === "search").length, top: topTerms(events.filter((e) => e.act === "search"), 8) };
+      P.social = { saved: events.filter((e) => e.act === "save").length, comments: events.filter((e) => e.act === "comment").length, shares: events.filter((e) => e.act === "share").length, following: events.filter((e) => e.act === "follow").length };
+      // TikTok exports have no captions, so this is mostly empty there; Facebook titles and search words do give something to read
+      P.content = NL.imp.themes.summarize(events.filter((e) => ["like", "save", "view"].includes(e.act) && e.text));
     } else {
       const views = events.filter((e) => e.act === "view" && e.kind !== "music");
       P.series.views = stats(views, { gapSec: 1800, minBinge: 60 });
@@ -190,8 +223,7 @@ NL.imp.habits = (() => {
   /** events = { ig:[], yt:[] } -> report (summary only; raw items are stored separately). */
   function analyze(events, meta = {}) {
     const report = { version: 2, createdAt: Date.now(), meta, platforms: {} };
-    if (events.ig && events.ig.length) report.platforms.ig = platformReport("ig", events.ig);
-    if (events.yt && events.yt.length) report.platforms.yt = platformReport("yt", events.yt);
+    for (const k of ["ig", "yt", "tt", "fb"]) if (events[k] && events[k].length) report.platforms[k] = platformReport(k, events[k]);
     const ps = Object.values(report.platforms).filter((p) => p.verdict.findings.length);
     if (ps.length) {
       const w = ps.map((p) => Math.log10(1 + Object.values(p.series).filter(Boolean).reduce((a, s) => a + s.n, 0)));

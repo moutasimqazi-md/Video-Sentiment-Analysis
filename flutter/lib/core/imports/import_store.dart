@@ -5,15 +5,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'habits.dart';
 
-/// Saved habits reports from imported Instagram / YouTube history, kept on this phone for the signed-in account only.
+/// Saved habits reports from imported Instagram / YouTube / TikTok / Facebook history, kept on this phone for the signed-in account only.
 /// One report per profile and platform (never combined). The export files themselves are never stored.
 class ImportStore extends ChangeNotifier {
   ImportStore(this._prefs, {String? userId}) : _uid = userId;
   final SharedPreferences _prefs;
   String? _uid;
 
-  static const platforms = ['ig', 'yt'];
-  static const platformNames = {'ig': 'Instagram', 'yt': 'YouTube'};
+  static const platforms = ['ig', 'yt', 'tt', 'fb'];
+  static const platformNames = {'ig': 'Instagram', 'yt': 'YouTube', 'tt': 'TikTok', 'fb': 'Facebook'};
 
   String _key(String profile, String src) => 'imp_${_uid ?? 'none'}_${profile}_$src';
   String get _indexKey => 'imp_index_${_uid ?? 'none'}';
