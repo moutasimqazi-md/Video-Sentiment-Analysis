@@ -1,0 +1,191 @@
+{
+  "version": 1,
+  "note": "Source of truth for topics and goal presets. Edit this file, then run: node shared/sync.js (writes frontend/js/data/taxonomy.js and flutter/assets/taxonomy.json). Keywords are lowercase. `tags` are hashtags without the #, `words` are plain words, and entries with a space are matched as phrases. English plus common Roman Urdu / Hindi words (basic). This is the quick caption/title estimate; the video check refines it.",
+  "topics": {
+    "ai_tech": {
+      "label": "AI & programming",
+      "tags": ["ai", "artificialintelligence", "machinelearning", "deeplearning", "chatgpt", "openai", "aitools", "llm", "coding", "programming", "python", "javascript", "webdev", "developer", "softwareengineer", "datascience", "techtok", "cybersecurity", "robotics", "automation", "nocode", "github", "claude", "gemini"],
+      "words": ["ai", "artificial intelligence", "machine learning", "deep learning", "chatgpt", "openai", "llm", "prompt engineering", "ai tools", "ai agent", "neural network", "coding", "programming", "developer", "software engineer", "python", "javascript", "algorithm", "data science", "github", "open source", "tech stack", "automation", "robotics", "cybersecurity"]
+    },
+    "careers": {
+      "label": "Career & business",
+      "tags": ["career", "careers", "jobs", "jobsearch", "interview", "resume", "linkedin", "entrepreneur", "entrepreneurship", "startup", "business", "smallbusiness", "marketing", "sidehustle", "freelancing", "leadership", "productivity", "workfromhome", "ecommerce", "sales", "networking"],
+      "words": ["career", "interview", "resume", "cv", "job offer", "salary", "promotion", "freelance", "freelancing", "startup", "founder", "entrepreneur", "business", "clients", "marketing", "linkedin", "networking", "productivity", "side hustle", "leadership", "work from home", "ecommerce"]
+    },
+    "learning": {
+      "label": "Learning & study",
+      "tags": ["education", "study", "studytok", "studywithme", "studymotivation", "learning", "learn", "books", "booktok", "science", "history", "facts", "knowledge", "languages", "languagelearning", "lecture", "students", "exam", "ielts", "scholarship"],
+      "words": ["learn", "tutorial", "lesson", "course", "explained", "lecture", "study", "exam", "students", "scholarship", "ielts", "book", "reading", "science", "history", "facts", "documentary", "how to learn", "vocabulary", "learn a language", "language learning"]
+    },
+    "fitness": {
+      "label": "Fitness & health",
+      "tags": ["gym", "fitness", "workout", "bodybuilding", "gymmotivation", "calisthenics", "yoga", "legday", "gymlife", "running", "marathon", "health", "healthy", "nutrition", "diet", "weightloss", "wellness", "sleep"],
+      "words": ["gym", "workout", "fitness", "muscle", "protein", "cardio", "squat", "deadlift", "running", "yoga", "diet", "nutrition", "weight loss", "healthy", "stretching", "home workout"]
+    },
+    "finance": {
+      "label": "Money & investing",
+      "tags": ["finance", "investing", "stocks", "stockmarket", "crypto", "bitcoin", "trading", "personalfinance", "money", "budgeting", "savings", "realestate", "forex", "wealth"],
+      "words": ["invest", "investing", "stock", "stocks", "crypto", "bitcoin", "trading", "forex", "budget", "savings", "passive income", "wealth", "mutual fund", "real estate", "interest rate", "inflation"]
+    },
+    "motivation": {
+      "label": "Motivation & self-improvement",
+      "tags": ["motivation", "motivational", "mindset", "discipline", "selfimprovement", "success", "goals", "habits", "growthmindset", "inspiration"],
+      "words": ["motivation", "mindset", "discipline", "habits", "self improvement", "goals", "consistency", "never give up", "success", "personal growth", "growth mindset"]
+    },
+    "faith": {
+      "label": "Faith & reflection",
+      "tags": ["islam", "islamic", "quran", "allah", "dua", "deen", "muslim", "ramadan", "jummah", "hadith", "sunnah", "nasheed", "alhamdulillah", "bismillah", "makkah", "madinah", "faith", "prayer", "bible", "church", "gita"],
+      "words": ["quran", "allah", "islam", "islamic", "dua", "hadith", "sunnah", "ramadan", "namaz", "salah", "prayer", "jummah", "subhanallah", "alhamdulillah", "faith", "sermon"]
+    },
+    "calm": {
+      "label": "Calm & self-care",
+      "tags": ["meditation", "mindfulness", "selfcare", "journaling", "breathwork", "therapy", "healing", "peace", "calm", "gratitude"],
+      "words": ["meditation", "mindfulness", "breathing", "self care", "journaling", "gratitude", "healing", "calm", "inner peace", "therapy"]
+    },
+    "romance": {
+      "label": "Romance & couples",
+      "tags": ["couple", "couplegoals", "romantic", "relationship", "relationshipgoals", "wedding", "nikkah", "shaadi", "lovestory", "valentine", "proposal", "bridal", "anniversary", "mohabbat", "pyar", "ishq"],
+      "words": ["love story", "in love", "falling in love", "my love", "couple", "romantic", "wedding", "nikkah", "shaadi", "proposal", "anniversary", "valentine", "boyfriend", "girlfriend", "husband", "wife", "i love you", "mohabbat", "pyar", "ishq"]
+    },
+    "relationship_conflict": {
+      "label": "Breakups, cheating & toxic ex",
+      "tags": ["breakup", "breakups", "cheating", "cheater", "cheated", "toxicrelationship", "toxicex", "redflags", "redflag", "situationship", "ghosted", "ghosting", "heartbreak", "heartbroken", "betrayal", "divorce", "narcissist", "movingon", "brokenheart", "exboyfriend", "exgirlfriend", "bewafa", "bewafai", "dhoka"],
+      "words": ["breakup", "break up", "broke up", "cheating", "cheated", "cheater", "cheats", "toxic relationship", "red flag", "red flags", "ghosted", "situationship", "heartbreak", "betrayal", "divorce", "narcissist", "move on", "my ex", "your ex", "his ex", "her ex", "toxic ex", "bewafa", "bewafai", "dhoka", "he cheated", "she cheated", "caught cheating", "get over him", "get over her", "back with my ex"],
+      "tip": "Tap \"Not interested\" on these and mute the accounts that post them. Watching or liking them usually tells the app to show you more of the same."
+    },
+    "dating": {
+      "label": "Dating & attraction",
+      "tags": ["dating", "datingadvice", "datingtips", "rizz", "flirt", "flirting", "pickuplines", "tinder", "hinge", "bumble", "singlelife", "talkingstage", "attraction"],
+      "words": ["dating", "rizz", "flirt", "flirting", "pickup line", "dating app", "tinder", "talking stage", "how to get a girl", "how to get a guy", "text her", "text him", "attraction", "ask her out", "ask him out", "crush", "simp"],
+      "tip": "Use \"Not interested\" on dating and attraction reels so they stop crowding the feed."
+    },
+    "gossip": {
+      "label": "Celebrity & gossip",
+      "tags": ["celebrity", "celebs", "gossip", "tea", "influencerdrama", "scandal", "exposed", "paparazzi", "tiktokdrama", "dramaalert"],
+      "words": ["celebrity", "gossip", "scandal", "exposed", "spill the tea", "paparazzi", "drama alert", "influencer drama", "celebrity drama"],
+      "tip": "Gossip and drama pages are designed to keep you watching. Muting a few of them shortens the feed quickly."
+    },
+    "news_outrage": {
+      "label": "News & politics",
+      "tags": ["news", "breakingnews", "politics", "election", "government", "protest", "war", "gaza", "palestine", "ukraine", "crisis", "imrankhan"],
+      "words": ["news", "election", "politician", "government", "protest", "war", "breaking news", "parliament", "minister", "prime minister", "crisis"],
+      "tip": "News and politics reels are often built to provoke. Pick one or two sources you trust and mute the rest."
+    },
+    "low_mood": {
+      "label": "Sad & low-mood content",
+      "tags": ["sad", "sadness", "sadquotes", "sadstatus", "depression", "depressed", "anxiety", "darkthoughts", "lonely", "loneliness", "hopeless", "overthinking", "numb", "crying", "udaas", "dard", "judai"],
+      "words": ["sad", "depressed", "depression", "lonely", "crying", "hopeless", "overthinking", "feeling lost", "numb", "udaas", "tanhai"],
+      "tip": "A feed that is mostly heavy can weigh on mood. Hide this topic and follow a few lighter accounts. If it feels like more than a feed, talking to someone you trust helps."
+    },
+    "comedy": {
+      "label": "Comedy & memes",
+      "tags": ["funny", "comedy", "memes", "meme", "humor", "lol", "jokes", "prank", "skit"],
+      "words": ["funny", "lol", "lmao", "comedy", "joke", "prank", "hilarious", "meme", "skit"]
+    },
+    "gaming": {
+      "label": "Gaming",
+      "tags": ["gaming", "gamer", "pubg", "minecraft", "fortnite", "valorant", "esports", "ps5", "xbox", "gta", "freefire", "codm"],
+      "words": ["gaming", "gamer", "pubg", "minecraft", "fortnite", "valorant", "esports", "gameplay", "free fire", "playstation", "xbox"]
+    },
+    "music_dance": {
+      "label": "Music & dance",
+      "tags": ["music", "song", "lyrics", "singer", "rap", "hiphop", "newmusic", "qawwali", "dance", "dancer", "dancing", "dj", "choreography"],
+      "words": ["song", "lyrics", "singer", "rapper", "music video", "dance", "dancing", "choreography", "concert", "new song", "qawwali"]
+    },
+    "food": {
+      "label": "Food & cooking",
+      "tags": ["food", "foodie", "recipe", "cooking", "streetfood", "desserts", "biryani", "foodblogger", "chai", "bbq", "baking"],
+      "words": ["recipe", "cooking", "delicious", "restaurant", "street food", "baking", "biryani", "chef", "foodie"]
+    },
+    "travel_nature": {
+      "label": "Travel & nature",
+      "tags": ["travel", "wanderlust", "nature", "mountains", "beach", "sunset", "photography", "naturelovers", "landscape", "hiking", "roadtrip"],
+      "words": ["travel", "trip", "vacation", "mountains", "beach", "sunset", "hiking", "scenery", "road trip"]
+    },
+    "fashion_beauty": {
+      "label": "Fashion & beauty",
+      "tags": ["fashion", "style", "ootd", "makeup", "beauty", "skincare", "hair", "outfit", "grwm", "streetwear", "jewellery", "luxury"],
+      "words": ["fashion", "outfit", "makeup", "skincare", "hairstyle", "get ready with me", "styling", "haul"]
+    },
+    "sports": {
+      "label": "Sports",
+      "tags": ["cricket", "football", "soccer", "sports", "psl", "ipl", "fifa", "ronaldo", "messi", "nba", "ufc", "wwe", "boxing"],
+      "words": ["cricket", "football", "match", "wicket", "tournament", "world cup", "ronaldo", "messi", "nba"]
+    },
+    "family_kids": {
+      "label": "Family & kids",
+      "tags": ["parenting", "family", "kids", "baby", "momlife", "dadlife", "toddler", "newborn", "pregnancy"],
+      "words": ["parenting", "toddler", "newborn", "my kids", "my son", "my daughter", "mom", "dad", "pregnancy", "homeschool"]
+    },
+    "pets_cute": {
+      "label": "Pets & cute",
+      "tags": ["pets", "puppy", "dog", "cat", "cute", "aww", "wholesome", "kitten"],
+      "words": ["puppy", "kitten", "cute", "adorable", "my dog", "my cat"]
+    }
+  },
+  "goals": [
+    {
+      "id": "ai_career",
+      "label": "Grow in AI & tech",
+      "blurb": "Learn, build and get hired in AI and software.",
+      "supports": ["ai_tech", "learning", "careers", "motivation"],
+      "avoid": ["romance", "dating", "relationship_conflict", "gossip", "low_mood"]
+    },
+    {
+      "id": "career_business",
+      "label": "Grow my career or business",
+      "blurb": "Skills, clients, income and leadership.",
+      "supports": ["careers", "finance", "ai_tech", "learning", "motivation"],
+      "avoid": ["gossip", "dating", "relationship_conflict", "gaming"]
+    },
+    {
+      "id": "study",
+      "label": "Study & exams",
+      "blurb": "Stay on top of coursework and learning.",
+      "supports": ["learning", "motivation", "ai_tech"],
+      "avoid": ["gaming", "gossip", "dating", "relationship_conflict"]
+    },
+    {
+      "id": "fitness",
+      "label": "Get fitter & healthier",
+      "blurb": "Training, food and sleep that support your body.",
+      "supports": ["fitness", "motivation"],
+      "avoid": ["gossip"]
+    },
+    {
+      "id": "commitment",
+      "label": "Protect my relationship",
+      "blurb": "Stay committed and keep outside noise away from a relationship.",
+      "supports": ["romance", "family_kids"],
+      "avoid": ["relationship_conflict", "dating", "gossip"]
+    },
+    {
+      "id": "calm",
+      "label": "Feel calmer",
+      "blurb": "Less stress and heaviness, more peace.",
+      "supports": ["calm", "faith", "travel_nature", "pets_cute"],
+      "avoid": ["low_mood", "news_outrage", "relationship_conflict", "gossip"]
+    },
+    {
+      "id": "faith",
+      "label": "Grow in faith",
+      "blurb": "Keep your feed in line with your values.",
+      "supports": ["faith", "learning", "calm"],
+      "avoid": ["dating", "gossip", "relationship_conflict"]
+    },
+    {
+      "id": "less_noise",
+      "label": "Less drama & outrage",
+      "blurb": "Cut the content built to provoke you.",
+      "supports": [],
+      "avoid": ["gossip", "news_outrage", "relationship_conflict", "low_mood"]
+    },
+    {
+      "id": "parenting",
+      "label": "Be a present parent",
+      "blurb": "Ideas for family life, and fewer distractions.",
+      "supports": ["family_kids", "learning"],
+      "avoid": ["gossip", "dating", "gaming"]
+    }
+  ]
+}

@@ -104,3 +104,18 @@
 .cmp.down { background: var(--red-soft); color: var(--red); }
 .cmp.flat { background: var(--surface-2); color: var(--muted); }
 @media print { .hb-tabs, .no-print { display: none !important; } .hb-panel[hidden] { display: block !important; } }
+
+/* goals tab */
+.align-bar { display: flex; height: 16px; border-radius: 999px; overflow: hidden; background: var(--surface-2); margin: 6px 0 10px; }
+.align-bar i { display: block; height: 100%; }
+.align-bar .s, .align-legend .dot.s, .themes .track i.supports { background: var(--green); }
+.align-bar .n, .align-legend .dot.n { background: var(--border-strong); }
+.align-bar .a, .align-legend .dot.a, .themes .track i.against { background: var(--red); }
+.align-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13.5px; color: var(--muted); margin-bottom: 8px; }
+.align-legend b { color: var(--text); }
+.align-legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+.goal-sub { font: 700 14.5px var(--font-display); margin: 18px 0 6px; }
+.goal-avoid { margin-top: 16px; }
+.goal-avoid summary { cursor: pointer; font-weight: 650; font-size: 14px; min-height: 40px; display: flex; align-items: center; gap: 6px; }
+.themes .track i.neutral { background: var(--border-strong); }
+.dgrid > .card.goal-group > .align-bar, .dgrid > .card.goal-group > .align-legend { flex: none; } /* dashboard.css gives every card child flex: 1, which squashed the bar on phones */

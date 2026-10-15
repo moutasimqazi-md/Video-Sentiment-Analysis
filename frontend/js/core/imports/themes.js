@@ -5,34 +5,44 @@ NL.imp = NL.imp || {};
 
 NL.imp.themes = (() => {
   const L = NL.LEXICON;
-  const tokenMap = new Map(), tagMap = new Map(), phrases = [];
-  const add = (m, k, v) => { if (!m.has(k)) m.set(k, []); m.get(k).push(v); };
-  for (const [key, th] of Object.entries(L.themes)) {
-    th.tags.forEach((t) => add(tagMap, t.toLowerCase(), key));
-    th.words.forEach((w) => { w = w.toLowerCase(); if (/\s/.test(w)) phrases.push([w, key]); else add(tokenMap, w, key); });
-  }
   const heavy = new Set(L.heavyMoods);
   const monthKey = (t) => { const d = new Date(t * 1000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; };
 
+  /** Builds a classifier for any table shaped { key: { tags, words } }: text -> { theme, score } or null when nothing is recognised.
+      The goals engine uses it with the shared taxonomy; the mood themes below use it with the lexicon. */
+  function makeClassifier(table) {
+    const tokenMap = new Map(), tagMap = new Map(), phrases = [];
+    const add = (m, k, v) => { if (!m.has(k)) m.set(k, []); m.get(k).push(v); };
+    for (const [key, th] of Object.entries(table)) {
+      (th.tags || []).forEach((t) => add(tagMap, t.toLowerCase(), key));
+      (th.words || []).forEach((w) => { w = w.toLowerCase(); if (/\s/.test(w)) phrases.push([w, key]); else add(tokenMap, w, key); });
+    }
+    return (text) => {
+      const t = (text || "").toLowerCase();
+      if (t.length < 3) return null;
+      const scores = {};
+      const bump = (k, w) => { scores[k] = (scores[k] || 0) + w; };
+      for (const m of t.matchAll(/#([\p{L}\p{N}_]+)/gu)) {
+        const ks = tagMap.get(m[1]) || tokenMap.get(m[1]);
+        if (ks) ks.forEach((k) => bump(k, tagMap.has(m[1]) ? 2 : 1));
+      }
+      const seen = new Set();
+      for (const m of t.replace(/#[\p{L}\p{N}_]+/gu, " ").matchAll(/[\p{L}\p{N}_']+/gu)) {
+        if (seen.has(m[0])) continue; seen.add(m[0]);
+        const ks = tokenMap.get(m[0]); if (ks) ks.forEach((k) => bump(k, 1));
+      }
+      for (const [ph, k] of phrases) if (t.includes(ph)) bump(k, 1.5);
+      let best = null, b = 0;
+      for (const k in scores) if (scores[k] > b) { b = scores[k]; best = k; }
+      return best && b >= 1 ? { theme: best, score: b } : null;
+    };
+  }
+
+  const classifyTheme = makeClassifier(L.themes);
   /** -> { theme, mood, score } or null when nothing in the text is recognised. */
   function classify(text) {
-    const t = (text || "").toLowerCase();
-    if (t.length < 3) return null;
-    const scores = {};
-    const bump = (k, w) => { scores[k] = (scores[k] || 0) + w; };
-    for (const m of t.matchAll(/#([\p{L}\p{N}_]+)/gu)) {
-      const ks = tagMap.get(m[1]) || tokenMap.get(m[1]);
-      if (ks) ks.forEach((k) => bump(k, tagMap.has(m[1]) ? 2 : 1));
-    }
-    const seen = new Set();
-    for (const m of t.replace(/#[\p{L}\p{N}_]+/gu, " ").matchAll(/[\p{L}\p{N}_']+/gu)) {
-      if (seen.has(m[0])) continue; seen.add(m[0]);
-      const ks = tokenMap.get(m[0]); if (ks) ks.forEach((k) => bump(k, 1));
-    }
-    for (const [ph, k] of phrases) if (t.includes(ph)) bump(k, 1.5);
-    let best = null, b = 0;
-    for (const k in scores) if (scores[k] > b) { b = scores[k]; best = k; }
-    return best && b >= 1 ? { theme: best, mood: L.themes[best].mood, score: b } : null;
+    const c = classifyTheme(text);
+    return c ? { theme: c.theme, mood: L.themes[c.theme].mood, score: c.score } : null;
   }
 
   /** Summarise a list of events (anything with .text). */
@@ -62,5 +72,5 @@ NL.imp.themes = (() => {
       flagged: flagged.slice(0, 12),
     };
   }
-  return { classify, summarize };
+  return { classify, summarize, makeClassifier };
 })();

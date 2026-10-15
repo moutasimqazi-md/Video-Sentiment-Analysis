@@ -268,6 +268,85 @@
     if (first) NL.toast(first);
   }
 
+  /* ================= GOALS ================= */
+  /* Pick goals and topics to see less of; every watched / liked item is placed on a topic (quick keyword estimate from captions, hashtags
+     and titles) and counted as helping, neutral or working against those choices. The choices stay in this browser. */
+  const GL = NL.imp.goals, gKey = "goals_" + profile;
+  const gSel = (() => { const s = NL.store.get(gKey, {}); return { ...GL.normalize(s), custom: !!s.custom }; })();
+  const gSupports = (goals) => new Set(goals.flatMap((id) => GL.byId[id].supports));
+  const gSave = () => NL.store.set(gKey, gSel);
+  function gToggleGoal(id) {
+    const on = gSel.goals.includes(id);
+    gSel.goals = on ? gSel.goals.filter((x) => x !== id) : [...gSel.goals, id];
+    if (!on) { const sup = gSupports(gSel.goals); gSel.avoid = [...new Set([...gSel.avoid, ...GL.defaultAvoid([id])])].filter((t) => !sup.has(t)); }
+    else if (!gSel.custom) gSel.avoid = GL.defaultAvoid(gSel.goals);
+    gSave();
+  }
+  function gToggleAvoid(t) {
+    gSel.avoid = gSel.avoid.includes(t) ? gSel.avoid.filter((x) => x !== t) : [...gSel.avoid, t];
+    gSel.custom = true; gSave();
+  }
+  const stanceTxt = { supports: "helps your goals", neutral: "neutral", against: "you chose to see less" };
+
+  function alignBar(sh, label) {
+    const seg = (cls, v) => (v > 0 ? `<i class="${cls}" style="width:${(v * 100).toFixed(1)}%"></i>` : "");
+    return `<div class="align-bar" role="img" aria-label="${esc(label)}">${seg("s", sh.supports)}${seg("n", sh.neutral)}${seg("a", sh.against)}</div>
+      <div class="align-legend"><span><span class="dot s"></span><b>${pct(sh.supports)}%</b> helps your goals</span><span><span class="dot n"></span><b>${pct(sh.neutral)}%</b> neutral</span><span><span class="dot a"></span><b>${pct(sh.against)}%</b> you chose to see less</span></div>`;
+  }
+  function goalGroup(g, res) {
+    const label = `${g.label}: ${pct(g.share.supports)}% helps your goals, ${pct(g.share.neutral)}% neutral, ${pct(g.share.against)}% you chose to see less`;
+    const topics = g.topics.slice(0, 8).map((t, i) => `<div class="bar-row ${i === 0 ? "top" : ""}"><span class="emo" aria-hidden="true"></span><span class="name">${esc(t.label)}<small>${stanceTxt[t.stance]}</small></span><span class="track"><i class="${t.stance}" style="width:${Math.min(100, t.share * 100)}%"></i></span><span class="pct">${pct(t.share)}%</span></div>`).join("");
+    const ex = g.examples.map((f) => `<div class="flag-item"><div><p>${esc(f.text || "(no caption)")}</p><small>${esc(f.label)} · ${NL.fmtDate(f.t * 1000)}</small></div><a class="btn sm ghost" href="${esc(f.url)}" target="_blank" rel="noopener noreferrer" aria-label="Open the original: ${esc((f.text || "").slice(0, 40))} (opens in a new tab)">${NL.icon("external", 15)}Open</a></div>`).join("");
+    const fnds = GL.findings(g, res).map(finding).join("");
+    return `<section class="card goal-group"><div class="card-head"><h3 class="h-card">${esc(g.label)}</h3><span class="muted" style="font-size:12.5px">${nf(g.classified)} of ${nf(g.n)} placed on a topic (${pct(g.coverage)}%) · ${g.days} day${g.days === 1 ? "" : "s"}</span></div>
+      ${g.classified ? alignBar(g.share, label) : ""}
+      ${fnds}
+      ${g.topics.length ? `<h4 class="goal-sub">Topics</h4><div class="themes">${topics}</div>` : ""}
+      ${g.periods.length > 1 ? `<h4 class="goal-sub">Over time</h4><div id="gt-${g.key}"></div>` : ""}
+      ${ex ? `<h4 class="goal-sub">Examples you chose to see less of</h4>${ex}` : ""}</section>`;
+  }
+  function drawGoalTrend(g) {
+    const el = $("gt-" + g.key); if (!el) return;
+    const w = cw(el, 640, 280), nm = (k) => (g.grain === "month" ? monthName(k) : day(k)), rows = g.periods.filter((p) => p.n >= 3);
+    if (rows.length < 2) { el.innerHTML = `<p class="muted">Not enough items in each ${g.grain} to draw a trend.</p>`; return; }
+    const p1 = (p, k) => Math.round((p[k] / p.n) * 1000) / 10;
+    el.innerHTML = C.line({ labels: rows.map((p) => nm(p.k)), series: [{ name: "Helps your goals %", color: "#1f9d6f", values: rows.map((p) => p1(p, "supports")) }, { name: "You chose to see less %", color: "#f4685f", values: rows.map((p) => p1(p, "against")) }], width: w, height: Math.max(200, Math.round(w * 0.35)), yFmt: (v) => v + "%" });
+    C.describe(el, `Share of recognised items by ${g.grain}: helping your goals versus topics you chose to see less of.`, C.table(`Share by ${g.grain}`, [NL.cap(g.grain), "Recognised", "Helps", "See less"], rows.map((p) => [nm(p.k), nf(p.n), pct(p.supports / p.n) + "%", pct(p.against / p.n) + "%"])));
+  }
+
+  let gToken = 0;
+  async function renderGoals(focus) {
+    const box = $("panel-goals"), token = ++gToken;
+    const topicKeys = Object.keys(NL.TAXONOMY.topics).sort((a, b) => (gSel.avoid.includes(b) - gSel.avoid.includes(a)) || GL.topicLabel(a).localeCompare(GL.topicLabel(b)));
+    const picker = `<section class="card"><div class="card-head"><h3 class="h-card">What do you want your feed to help you with?</h3><span class="muted" style="font-size:12.5px">saved in this browser only</span></div>
+        <p>Pick one or more goals. We'll show how much of what you ${src === "yt" ? "watch" : "watch and like"} helps them, and how much pulls the other way.</p>
+        <div class="chips goal-chips" role="group" aria-label="Goals" style="margin-top:12px">${GL.GOALS.map((g) => `<button class="chip" data-goal="${g.id}" aria-pressed="${gSel.goals.includes(g.id)}" title="${esc(g.blurb)}">${esc(g.label)}</button>`).join("")}</div>
+        <details class="goal-avoid" ${gSel.goals.length || gSel.avoid.length ? "open" : ""}><summary>Topics you want to see less of <span class="muted">· ${gSel.avoid.length} selected</span></summary>
+          <p class="disclaimer" style="margin:8px 0 10px">${gSel.goals.length ? "Suggested from your goals. Tap to add or remove any topic." : "Tap any topic you'd like to see less of."} Something you pick here always counts as working against you, even if one of your goals would normally help.</p>
+          <div class="chips" role="group" aria-label="Topics to see less of">${topicKeys.map((t) => `<button class="chip" data-avoid="${t}" aria-pressed="${gSel.avoid.includes(t)}">${esc(GL.topicLabel(t))}</button>`).join("")}</div>
+          ${gSel.custom ? `<p style="margin-top:10px"><button class="btn sm ghost" id="goalReset">Reset to the suggestions</button></p>` : ""}</details></section>`;
+    box.innerHTML = `${picker}<div id="goalResults" style="margin-top:20px"><p class="muted">Working it out…</p></div>`;
+    if (focus) { const f = box.querySelector(focus); if (f) f.focus(); }
+    NL.hydrateIcons(box);
+    const out = $("goalResults");
+    if (!gSel.goals.length && !gSel.avoid.length) { out.innerHTML = `<div class="card empty"><div class="e-ico"><i data-icon="target" data-size="32"></i></div><h2 class="h3">Choose a goal to begin</h2><p style="max-width:460px;margin:8px auto 0">For example "Grow in AI & tech" or "Protect my relationship". Nothing is sent anywhere: this is worked out in your browser.</p></div>`; NL.hydrateIcons(out); return; }
+    const ev = await loadEvents();
+    if (token !== gToken) return; // a newer render started while the items loaded
+    const res = GL.evaluate([...ev.ig, ...ev.yt], gSel);
+    if (!res.groups.length) { out.innerHTML = `<div class="card empty"><h2 class="h3">No dated items to look at</h2><p>This import has no watched or liked items with dates.</p></div>`; return; }
+    out.innerHTML = `<div class="dgrid">${res.groups.map((g) => goalGroup(g, res)).join("")}</div>
+      <section class="card" style="margin-top:20px"><h3 class="h-card">How to read this</h3>
+        <p class="disclaimer" style="margin-top:0">This is a quick estimate. Each item is placed on a topic using its caption, hashtags and title with a keyword list (English and basic Roman Urdu/Hindi). It does not see the video, and items with short or empty captions can't be placed, so check the percentage placed above. Examples are shown so you can judge for yourself. It describes what is in your history, not who you are.</p></section>`;
+    res.groups.forEach(drawGoalTrend);
+    NL.hydrateIcons(out);
+    announce(`Goals updated: ${res.groups.map((g) => `${g.label} ${pct(g.share.supports)}% helps, ${pct(g.share.against)}% to see less of`).join("; ")}`);
+  }
+  $("panel-goals").addEventListener("click", (e) => {
+    const g = e.target.closest("[data-goal]"); if (g) { gToggleGoal(g.dataset.goal); return renderGoals(`[data-goal="${g.dataset.goal}"]`); }
+    const a = e.target.closest("[data-avoid]"); if (a) { gToggleAvoid(a.dataset.avoid); return renderGoals(`[data-avoid="${a.dataset.avoid}"]`); }
+    if (e.target.closest("#goalReset")) { gSel.custom = false; gSel.avoid = GL.defaultAvoid(gSel.goals); gSave(); renderGoals("[data-goal]"); }
+  });
+
   /* ================= BROWSE ================= */
   const bState = { platform: "all", kind: "all", act: "all", q: "", page: 0 };
   const PAGE = 25;
@@ -314,10 +393,10 @@
   }
 
   /* ================= tabs ================= */
-  const TABS = [["overview", "Overview", "chart"], ...plats.map((p) => [p, PLAT[p], p === "ig" ? "instagram" : "play"]), ["content", "Content", "brain"], ["browse", "Browse items", "film"]];
+  const TABS = [["overview", "Overview", "chart"], ...plats.map((p) => [p, PLAT[p], p === "ig" ? "instagram" : "play"]), ["content", "Content", "brain"], ["goals", "Goals", "target"], ["browse", "Browse items", "film"]];
   let current = TABS.some(([k]) => k === params.get("tab")) ? params.get("tab") : "overview";
   const rendered = new Set();
-  const renderers = { overview: renderOverview, ig: () => renderPlatform("ig"), yt: () => renderPlatform("yt"), content: renderContent, browse: renderBrowse };
+  const renderers = { overview: renderOverview, ig: () => renderPlatform("ig"), yt: () => renderPlatform("yt"), content: renderContent, goals: () => renderGoals(), browse: renderBrowse };
 
   $("hbTabs").innerHTML = TABS.map(([k, l, i]) => `<button class="hb-tab" role="tab" id="tab-${k}" aria-controls="panel-${k}" aria-selected="${k === current}" tabindex="${k === current ? 0 : -1}">${NL.icon(i, 16)}${l}</button>`).join("");
   function show(k, focus) {
