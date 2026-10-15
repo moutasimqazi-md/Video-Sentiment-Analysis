@@ -16,13 +16,21 @@ Why the Instagram features are off on cPanel: they drive a real Chromium browser
 
 You also need **Python 3.12 or 3.13** in cPanel's Python selector (Linux x86_64).
 
+## Before you start: neurolens.moveneticsdigital.com already answers
+
+When checked, `https://neurolens.moveneticsdigital.com/` showed a bare "Index of /" page and `/api/...` and `/pages/habits.html` returned **500**. So something is already attached to that name and it is broken or empty. Before step 2:
+
+- cPanel > **Setup Python App**: if an app already exists for this domain, open it and note its application root. Either delete it or reuse it (set the same values as step 2 below).
+- cPanel > **File Manager**: look in the domain's document root for an old `.htaccess` that mentions Passenger or Python. Rename it to `.htaccess.old`; Setup Python App writes a correct one itself.
+- The real error is in `~/neurolens/backend/stderr.log` (or the Passenger log shown next to the app) once the new app is in place.
+
 ## Steps
 
-1. **Upload** the project to `~/neurolens/` so that `backend/` and `frontend/` sit side by side. Leave out `.venv/`, `backend/data/`, `backend/eval/`, `flutter/`, `__pycache__/` and the zip files.
+1. **Upload the package.** Build it with `python backend/scripts/build_package.py` (or use `dist/neurolens-cpanel.zip` from this PC). In cPanel > **File Manager**, go to your home folder, upload `neurolens-cpanel.zip` and **Extract** it there. You get `~/neurolens/backend` and `~/neurolens/frontend`. The package already leaves out the virtualenv, `backend/data` (databases, accounts, keys), tests, the Flutter app and your personal export files.
 2. **cPanel > Setup Python App > Create Application**
    - Python version: 3.12 (or 3.13)
    - Application root: `neurolens/backend`
-   - Application URL: your domain or subdomain (use the root of it; the pages use relative links but a dedicated domain is simplest)
+   - Application URL: `neurolens.moveneticsdigital.com` (the root of that name)
    - Application startup file: `passenger_wsgi.py`
    - Application Entry point: `application`
 3. **Environment variables** (same screen, "Add Variable"):
@@ -49,13 +57,13 @@ You also need **Python 3.12 or 3.13** in cPanel's Python selector (Linux x86_64)
 7. **Turn on HTTPS** (cPanel > SSL/TLS Status > Run AutoSSL). Sign-in tokens and browser notifications need it.
 8. **Check it**, from the server terminal or any machine with `requests`:
    ```
-   python scripts/smoke_test.py https://YOUR-DOMAIN --deployed
+   python scripts/smoke_test.py https://neurolens.moveneticsdigital.com --deployed
    ```
    It signs up a throwaway account, uploads a generated video, waits for the analysis, checks the owner-only routes are closed to the public, and deletes the account. Add `--no-analyze` to skip the model run.
 
 ## Updating
 
-Upload the changed files and restart. Never replace `NL_DATA_DIR`. If `requirements-cpanel.txt` changed, run the `pip install` again.
+Rebuild the package, upload and extract it over `~/neurolens` (choose overwrite), and restart. Never replace `NL_DATA_DIR`. If `requirements-cpanel.txt` changed, run the `pip install` again.
 
 ## Owner access
 
@@ -73,6 +81,8 @@ Nobody is "local" on a server, so owner-only routes (for example `/api/feedback/
 You can also run `python -m uvicorn neurolens.main:app --host 127.0.0.1 --port 8000` as a service behind Apache or Nginx with the WebSocket upgrade passed through, install `requirements.txt` plus `playwright install chromium --with-deps`, and set `NL_DEPLOYED=1`. That is the only way to get the Instagram features online. It was not tried.
 
 ## What was tested
+
+- **The package itself:** `dist/neurolens-cpanel.zip` was extracted into an empty folder and run through `passenger_wsgi.py` in a fresh environment built only from `requirements-cpanel.txt`: the 27-check smoke test (real analysis included) and the 31-check browser run of the Goals tab on desktop and phone sizes all passed.
 
 - The app served through `passenger_wsgi.py` with a WSGI server (waitress, on Windows) in deployed mode: all pages, accounts, plans, a real analysis from upload to results, and the owner-only routes closed to the public. 23/23 checks in `scripts/smoke_test.py`.
 - `NL_FEED=0` (clean 503s) and `NL_WARMUP=0`.

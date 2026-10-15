@@ -11,3 +11,6 @@ Takeout/
 
 # offline experiment artifacts (embeddings of real frames)
 backend/eval/_*.npy
+
+# built deployment package
+dist/
