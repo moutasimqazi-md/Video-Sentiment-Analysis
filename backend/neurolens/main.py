@@ -348,7 +348,7 @@ def home_page(request: Request):
     host = request.headers.get("x-forwarded-host") or request.headers.get("host") or ""
     proto = (request.headers.get("x-forwarded-proto") or request.url.scheme).split(",")[0].strip()
     if host and re.fullmatch(r"[A-Za-z0-9.\-:]+", host.split(",")[0].strip()):
-        html = html.replace("https://neurolens.moveneticsdigital.com/assets/", f"{proto}://{host.split(',')[0].strip()}/assets/")
+        html = html.replace("https://neurolens.moveneticsdigital.com/", f"{proto}://{host.split(',')[0].strip()}/")
     return HTMLResponse(html)
 
 
