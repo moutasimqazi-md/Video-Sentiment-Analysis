@@ -4,6 +4,8 @@ Callers are either the owner (this computer or a paired browser: original ids) o
 are stored under their own prefix, and they can only ever see and change their own."""
 
 import asyncio
+import importlib.util
+import os
 import re
 import time
 from urllib.parse import urlparse
@@ -16,6 +18,16 @@ from neurolens import accounts, browser, guard, live, logstore, monitorstore, pu
 router = APIRouter(prefix="/api")
 owner = Depends(guard.require_owner)
 who = Depends(guard.actor)
+
+
+def _browser_ready():
+    """Signing in and scanning drive a real browser (Playwright) and stream it over a WebSocket. A host that has neither, such as
+    cPanel's Passenger, says so plainly instead of failing halfway. NL_FEED=0 switches the routes off on purpose."""
+    if os.environ.get("NL_FEED") == "0" or importlib.util.find_spec("playwright") is None:
+        raise HTTPException(503, "Instagram checks aren't available on this server.")
+
+
+browser_ready = Depends(_browser_ready)
 PID = re.compile(r"^[a-z0-9_-]{1,40}$")
 USER_PID = re.compile(r"^[a-z0-9_-]{1,30}$")
 HEX32 = re.compile(r"^[0-9a-f]{32}$")
@@ -77,7 +89,7 @@ def session_status(pid: str, a=who):
     return {"connected": browser.connected_at(pid), "login": live.status(pid)}
 
 
-@router.post("/sessions/{pid}/login")
+@router.post("/sessions/{pid}/login", dependencies=[browser_ready])
 def session_login(pid: str, a=who):
     raw = pid
     pid = _ns(a, pid)
@@ -89,7 +101,7 @@ def session_login(pid: str, a=who):
     return {"state": lv.state}
 
 
-@router.post("/sessions/{pid}/view-token")
+@router.post("/sessions/{pid}/view-token", dependencies=[browser_ready])
 def session_view_token(pid: str, a=who):
     """A single-use, 60-second key for the WebSocket that streams the private browser."""
     pid = _ns(a, pid)
@@ -190,7 +202,7 @@ class ImportIn(BaseModel):
     cookies: list[dict]
 
 
-@router.post("/sessions/{pid}/import")
+@router.post("/sessions/{pid}/import", dependencies=[browser_ready])
 def session_import(pid: str, body: ImportIn, a=who):
     """The app signed in to Instagram on the phone itself and hands over that session, so scans can run on the server."""
     raw = pid
@@ -271,7 +283,7 @@ class ScanIn(BaseModel):
     limit: int = 10
 
 
-@router.post("/scans")
+@router.post("/scans", dependencies=[browser_ready])
 def start_scan(body: ScanIn, a=who):
     pid = _ns(a, body.profile)
     if body.kind not in scanner.KINDS:

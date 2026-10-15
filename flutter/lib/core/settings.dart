@@ -12,7 +12,7 @@ class AppSettings extends ChangeNotifier {
         _theme = ThemeMode.values[(_prefs.getInt('theme') ?? 0).clamp(0, 2)];
 
   /// Where the NeuroLens server is, built in so nobody has to type it. Settings can override it (for example a server on your Wi-Fi).
-  static const defaultServer = 'https://absurd-chasing-deflector.ngrok-free.dev';
+  static const defaultServer = 'https://neurolens.moveneticsdigital.com';
 
   /// An address saved by an earlier version. "localhost" on a phone means the phone itself, where no server runs, so such a
   /// value (left over from testing over a cable) is dropped and the built-in server is used instead.

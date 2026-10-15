@@ -1,0 +1,21 @@
+# Pinned runtime for a cPanel host (Linux x86_64, Python 3.12 or 3.13: av 19 and the other pins have no wheels for 3.11).
+# Resolved against Linux wheels for 3.12 and 3.13, and the whole set ran the full test on Python 3.12 (see DEPLOY_CPANEL.md).
+#   pip install -r requirements-cpanel.txt
+# Differences from requirements.txt: CPU-only torch (no ~2 GB of CUDA libraries), headless OpenCV (no system GL libraries
+# needed), a2wsgi for Passenger, and no Playwright or uvicorn (Instagram checks need a real browser and a WebSocket, which
+# Passenger cannot give; see DEPLOY_CPANEL.md).
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+a2wsgi==1.10.10
+fastapi==0.143.1
+python-multipart==0.0.32
+requests==2.34.2
+numpy==2.3.5
+opencv-python-headless==5.0.0.93
+pillow==12.3.0
+av==19.0.1
+torch==2.14.1+cpu
+transformers==5.19.0
+yt-dlp==2026.8.19
+imageio-ffmpeg==0.6.0
+pywebpush==2.5.0

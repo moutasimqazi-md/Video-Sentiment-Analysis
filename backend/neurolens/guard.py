@@ -6,6 +6,7 @@ ngrok address) connects once through a single-use link made on this computer, so
 
 import hmac
 import json
+import os
 import secrets
 import threading
 import time
@@ -27,14 +28,17 @@ _lock = threading.Lock()
 
 
 def token():
-    logstore.DATA_DIR.mkdir(exist_ok=True)
+    logstore.DATA_DIR.mkdir(parents=True, exist_ok=True)
     if not TOKEN_FILE.exists():
         TOKEN_FILE.write_text(secrets.token_urlsafe(24), encoding="utf-8")
     return TOKEN_FILE.read_text(encoding="utf-8").strip()
 
 
 def is_local(request: Request):
-    """True only for a request made on this machine itself: loopback client, and no proxy (ngrok) in between."""
+    """True only for a request made on this machine itself: loopback client, and no proxy (ngrok) in between.
+    A hosted deployment sets NL_DEPLOYED=1: there "this machine" is the web server's own proxy, never a person, so nobody is local."""
+    if os.environ.get("NL_DEPLOYED") == "1":
+        return False
     host = request.client.host if request.client else ""
     if host not in ("127.0.0.1", "::1", "localhost"):
         return False

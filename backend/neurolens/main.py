@@ -7,7 +7,7 @@ import time
 import uuid
 from pathlib import Path
 
-from fastapi import FastAPI, Request, UploadFile, File, HTTPException
+from fastapi import Depends, FastAPI, Request, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from neurolens import accounts, accounts_api, analyzer, browser, calibration, downloader, feed_api, guard, logstore, monitor, monitorstore
 from neurolens.analyzer import analyze_video
 
-FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
+FRONTEND_DIR = Path(os.environ.get("NL_FRONTEND_DIR") or Path(__file__).resolve().parents[2] / "frontend")
 
 app = FastAPI(title="Video Sentiment Analyzer")
 
@@ -51,23 +51,42 @@ class FeedbackRequest(BaseModel):
     note: str | None = None
 
 
+STALE_TEMP_SECONDS = 60 * 60  # older than any analysis can run; a younger file may belong to another worker process
+
+
 def _sweep_temp():
     """Remove leftovers from a run that was killed mid-analysis, so no video outlives its job."""
+    cutoff = time.time() - STALE_TEMP_SECONDS
     for p in Path(tempfile.gettempdir()).glob(f"{TEMP_PREFIX}*"):
-        if p.is_dir():
-            shutil.rmtree(p, ignore_errors=True)
-        else:
-            p.unlink(missing_ok=True)
+        try:
+            if p.stat().st_mtime > cutoff:
+                continue
+            if p.is_dir():
+                shutil.rmtree(p, ignore_errors=True)
+            else:
+                p.unlink(missing_ok=True)
+        except OSError:
+            pass
 
 
-@app.on_event("startup")
-def start_warm_up():
+_started = False
+
+
+def startup():
+    """Open the databases, start the monitor loop and warm the models. Runs once per process: uvicorn triggers it through the
+    startup event, and a WSGI host (cPanel's Passenger), which never sends that event, calls it from passenger_wsgi.py."""
+    global _started
+    if _started:
+        return
+    _started = True
     _sweep_temp()
     logstore.init_db()
     monitorstore.init()
     accounts.init()
     monitorstore.abort_stale_scans()
     monitor.start()
+    if os.environ.get("NL_WARMUP") == "0":
+        return  # a small host loads the models on the first analysis instead of holding them in memory from the start
 
     def run():
         try:
@@ -77,6 +96,11 @@ def start_warm_up():
             print(f"warm-up failed (will load on first request): {e}", flush=True)
 
     threading.Thread(target=run, daemon=True).start()
+
+
+@app.on_event("startup")
+def start_warm_up():
+    startup()
 
 
 def _prune_jobs():
@@ -275,7 +299,7 @@ def feedback_stats():
     return logstore.stats()
 
 
-@app.get("/api/feedback/recent")
+@app.get("/api/feedback/recent", dependencies=[Depends(guard.require_owner)])  # lists everyone's analyses, so owner only
 def feedback_recent(limit: int = 50):
     return logstore.list_recent(min(limit, 200))
 

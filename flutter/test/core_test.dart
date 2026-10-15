@@ -18,7 +18,7 @@ void main() {
     test('the NeuroLens server is built in, so nothing has to be typed', () async {
       SharedPreferences.setMockInitialValues({});
       final fresh = AppSettings(await SharedPreferences.getInstance(), tokens: MemoryTokenStore());
-      expect(fresh.baseUrl, 'https://absurd-chasing-deflector.ngrok-free.dev');
+      expect(fresh.baseUrl, 'https://neurolens.moveneticsdigital.com');
       expect(fresh.isCustomServer, isFalse);
       await fresh.setBaseUrl('192.168.1.20:8000');
       expect(fresh.baseUrl, 'http://192.168.1.20:8000');

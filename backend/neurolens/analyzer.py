@@ -226,7 +226,7 @@ def warm_up():
         dummy = Image.fromarray(np.zeros((224, 224, 3), np.uint8))
         _image_embedding(model, processor(images=[dummy], return_tensors="pt"))
     try:
-        import audio_analyzer
+        from neurolens import audio_analyzer
 
         audio_analyzer.warm_up()
     except Exception as e:

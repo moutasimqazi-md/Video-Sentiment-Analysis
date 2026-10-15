@@ -1,6 +1,7 @@
 fastapi
 uvicorn[standard]
 python-multipart
+requests
 opencv-python
 numpy
 torch
@@ -11,3 +12,4 @@ yt-dlp
 imageio-ffmpeg
 playwright
 pywebpush
+a2wsgi

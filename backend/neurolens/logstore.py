@@ -7,6 +7,7 @@ Nothing here leaves the machine; it's a local SQLite file plus small files on di
 """
 
 import json
+import os
 import re
 import sqlite3
 import threading
@@ -15,7 +16,7 @@ from pathlib import Path
 
 import numpy as np
 
-DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+DATA_DIR = Path(os.environ.get("NL_DATA_DIR") or Path(__file__).resolve().parents[1] / "data")  # a server keeps this outside the app folder so a redeploy never wipes it
 DB_PATH = DATA_DIR / "analysis_log.db"
 THUMB_DIR = DATA_DIR / "thumbnails"
 EMBED_DIR = DATA_DIR / "embeddings"
@@ -78,7 +79,7 @@ def _conn():
 
 
 def init_db():
-    DATA_DIR.mkdir(exist_ok=True)
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
     THUMB_DIR.mkdir(exist_ok=True)
     EMBED_DIR.mkdir(exist_ok=True)
     KEY_DIR.mkdir(exist_ok=True)
