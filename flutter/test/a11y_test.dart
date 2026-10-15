@@ -30,7 +30,14 @@ Future<void> tapText(WidgetTester t, String text, {bool last = false}) async {
   if (all.evaluate().isEmpty || all.hitTestable().evaluate().isEmpty) {
     await t.scrollUntilVisible(all, 200, scrollable: find.byType(Scrollable).first);
   }
-  await t.tap(last ? all.last : all.first);
+  // a match near the bottom edge sits under the navigation bar at large text sizes; scroll it back up clear of the bar
+  final target = last ? all.last : all.first;
+  if (t.getCenter(target).dy > t.view.physicalSize.height / t.view.devicePixelRatio - 120) {
+    final pos = t.state<ScrollableState>(find.byType(Scrollable).first).position;
+    pos.jumpTo((pos.pixels - 240).clamp(pos.minScrollExtent, pos.maxScrollExtent));
+    await t.pumpAndSettle();
+  }
+  await t.tap(target);
 }
 
 void main() {

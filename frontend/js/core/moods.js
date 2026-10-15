@@ -2,22 +2,22 @@
 window.NL = window.NL || {};
 
 NL.MOODS = {
-  confident:   { emoji: "😎", label: "Attitude Reels" },
-  motivated:   { emoji: "🔥", label: "Motivation Reels" },
-  focused:     { emoji: "🎯", label: "Gym / Goals Reels" },
-  inspired:    { emoji: "✨", label: "Transformation Reels" },
-  excited:     { emoji: "🎉", label: "Celebration Reels" },
-  happy:       { emoji: "😄", label: "Fun / Trending Reels" },
-  funny:       { emoji: "😂", label: "Comedy / Relatable Reels" },
-  romantic:    { emoji: "💞", label: "Love / Couple Reels" },
-  hungry:      { emoji: "😋", label: "Food / Cravings Reels" },
-  peaceful:    { emoji: "🌿", label: "Aesthetic / Nature Reels" },
-  heartbroken: { emoji: "💔", label: "Breakup / Emotional Reels" },
-  sad:         { emoji: "😢", label: "Sad-song / Feeling-low Reels" },
-  angry:       { emoji: "😠", label: "Savage / Rage Reels" },
-  lost:        { emoji: "🧭", label: "Deep-thought / Alone Reels" },
-  tired:       { emoji: "😴", label: "Burnout / Tired Reels" },
-  depressed:   { emoji: "🌑", label: "Dark / Numb Reels" },
+  confident:   { emoji: "😎", label: "Attitude videos" },
+  motivated:   { emoji: "🔥", label: "Motivation videos" },
+  focused:     { emoji: "🎯", label: "Gym / Goals videos" },
+  inspired:    { emoji: "✨", label: "Transformation videos" },
+  excited:     { emoji: "🎉", label: "Celebration videos" },
+  happy:       { emoji: "😄", label: "Fun / Trending videos" },
+  funny:       { emoji: "😂", label: "Comedy / Relatable videos" },
+  romantic:    { emoji: "💞", label: "Love / Couple videos" },
+  hungry:      { emoji: "😋", label: "Food / Cravings videos" },
+  peaceful:    { emoji: "🌿", label: "Aesthetic / Nature videos" },
+  heartbroken: { emoji: "💔", label: "Breakup / Emotional videos" },
+  sad:         { emoji: "😢", label: "Sad-song / Feeling-low videos" },
+  angry:       { emoji: "😠", label: "Savage / Rage videos" },
+  lost:        { emoji: "🧭", label: "Deep-thought / Alone videos" },
+  tired:       { emoji: "😴", label: "Burnout / Tired videos" },
+  depressed:   { emoji: "🌑", label: "Dark / Numb videos" },
 };
 
 NL.moodEmoji = (m) => (NL.MOODS[m] && NL.MOODS[m].emoji) || "🎬";

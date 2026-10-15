@@ -96,22 +96,22 @@ CATEGORY_PROMPTS = {
 }
 
 MOOD_LABELS = {
-    "confident": "Attitude Reels",
-    "motivated": "Motivation Reels",
-    "focused": "Gym / Goals Reels",
-    "inspired": "Transformation Reels",
-    "excited": "Celebration Reels",
-    "happy": "Fun / Trending Reels",
-    "funny": "Comedy / Relatable Reels",
-    "romantic": "Love / Couple Reels",
-    "hungry": "Food / Cravings Reels",
-    "peaceful": "Aesthetic / Nature Reels",
-    "heartbroken": "Breakup / Emotional Reels",
-    "sad": "Sad-song / Feeling-low Reels",
-    "angry": "Savage / Rage Reels",
-    "lost": "Deep-thought / Alone Reels",
-    "tired": "Stress / Life-struggle Reels",
-    "depressed": "Dark / Healing Reels",
+    "confident": "Attitude videos",
+    "motivated": "Motivation videos",
+    "focused": "Gym / Goals videos",
+    "inspired": "Transformation videos",
+    "excited": "Celebration videos",
+    "happy": "Fun / Trending videos",
+    "funny": "Comedy / Relatable videos",
+    "romantic": "Love / Couple videos",
+    "hungry": "Food / Cravings videos",
+    "peaceful": "Aesthetic / Nature videos",
+    "heartbroken": "Breakup / Emotional videos",
+    "sad": "Sad-song / Feeling-low videos",
+    "angry": "Savage / Rage videos",
+    "lost": "Deep-thought / Alone videos",
+    "tired": "Stress / Life-struggle videos",
+    "depressed": "Dark / Healing videos",
 }
 
 
@@ -234,7 +234,7 @@ def warm_up():
 
 
 def _views(frame_bgr):
-    """Square views of a frame. CLIP centre-crops to a square, which throws away the top and bottom of a vertical Reel,
+    """Square views of a frame. CLIP centre-crops to a square, which throws away the top and bottom of a vertical video,
     so tall/wide frames are scored as three squares (start / middle / end) and averaged. Offline: +3 pts accuracy."""
     h, w = frame_bgr.shape[:2]
     rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
@@ -319,7 +319,7 @@ def _build_verdict(averages, dominant, cuts_per_minute):
 
     ranked = sorted(averages, key=averages.get, reverse=True)
     lines.append(
-        f"This feels like {'an' if dominant[0] in 'aeiou' else 'a'} {dominant} reel — "
+        f"This feels like {'an' if dominant[0] in 'aeiou' else 'a'} {dominant} video — "
         f"{MOOD_LABELS[dominant]} ({averages[dominant]:.0f}%)."
     )
     runners = ", ".join(f"{m} {averages[m]:.0f}%" for m in ranked[1:3])

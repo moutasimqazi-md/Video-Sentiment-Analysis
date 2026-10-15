@@ -15,16 +15,16 @@
       const agg = NL.wellbeing.aggregate(recent(c.id, WEEK));
       const body = agg.count
         ? `<div class="alert-banner ${agg.overall.key}" style="margin:12px 0"><div class="ico">${NL.wellbeing.iconSvg(agg.overall)}</div>
-            <div><b>${agg.overall.label}</b><p>${agg.count} Reel${agg.count > 1 ? "s" : ""} this week · ${agg.levels.watch + agg.levels.high} flagged</p></div></div>`
-        : `<p class="muted" style="margin:12px 0">No Reels reviewed in the last 7 days.</p>`;
+            <div><b>${agg.overall.label}</b><p>${agg.count} video${agg.count > 1 ? "s" : ""} this week · ${agg.levels.watch + agg.levels.high} flagged</p></div></div>`
+        : `<p class="muted" style="margin:12px 0">No videos reviewed in the last 7 days.</p>`;
       return `<article class="card"><div class="card-head" style="margin:0"><h2 class="h3">${NL.esc(c.name)}${c.age ? ` <span class="muted" style="font-weight:500">· ${c.age}</span>` : ""}</h2>
           <button class="btn sm ghost" data-del="${NL.esc(c.id)}" aria-label="Remove profile: ${NL.esc(c.name)}">${NL.icon("trash", 18)}</button></div>${body}
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <a class="btn primary sm" href="analyze.html?profile=${encodeURIComponent(c.id)}" aria-label="Analyze a Reel for ${NL.esc(c.name)}">${NL.icon("plus", 16)}Analyze a Reel</a>
+          <a class="btn primary sm" href="analyze.html?profile=${encodeURIComponent(c.id)}" aria-label="Analyze a video for ${NL.esc(c.name)}">${NL.icon("plus", 16)}Analyze a video</a>
           <a class="btn sm" href="report.html?profile=${encodeURIComponent(c.id)}&days=7" aria-label="Weekly report for ${NL.esc(c.name)}">Weekly report</a>
           <a class="btn sm" href="feed.html?profile=${encodeURIComponent(c.id)}" aria-label="Feed monitoring for ${NL.esc(c.name)}">Feed monitoring</a>
           ${NL.imp && NL.imp.store && NL.imp.store.sourcesFor(c.id).length ? NL.imp.store.sourcesFor(c.id).map((s) => `<a class="btn sm" href="habits.html?profile=${encodeURIComponent(c.id)}&src=${s}" aria-label="${NL.platName(s)} habits report for ${NL.esc(c.name)}">${NL.platName(s)} report</a>`).join("") : `<a class="btn sm" href="import.html?profile=${encodeURIComponent(c.id)}" aria-label="Import ${NL.esc(c.name)}'s Instagram or YouTube history">Import history</a>`}</div></article>`;
-    }).join("") : `<div class="card empty"><div class="e-ico">${NL.icon("users", 32)}</div><h2 class="h3">No child profiles yet</h2><p>Add one to start reviewing their Reels.</p></div>`;
+    }).join("") : `<div class="card empty"><div class="e-ico">${NL.icon("users", 32)}</div><h2 class="h3">No child profiles yet</h2><p>Add one to start reviewing their videos.</p></div>`;
 
     // alert feed: flagged analyses for any child in the last 14 days
     const flagged = all
@@ -35,8 +35,8 @@
       .slice(0, 5);
     $("alerts").innerHTML = flagged.length ? `<div class="card" style="margin-bottom:22px"><div class="card-head"><h2 class="h3">Recent alerts</h2><span class="muted" style="font-size:12px">last 14 days</span></div>
       ${flagged.map(({ h, a }) => `<div class="insight"><div class="ico">${NL.wellbeing.iconSvg(a.level)}</div>${NL.thumbHTML(h, NL.moodEmoji(Object.entries(h.result.averages).sort((x, y) => y[1] - x[1])[0][0]), "th th-sm")}
-        <div style="flex:1"><b>${NL.esc(NL.profiles.name(h.profileId))} · ${NL.esc(h.title || "Reel")}</b><span>${NL.esc(a.summary)}</span></div>
-        <div class="row-actions">${NL.watchLink(h)}<a class="btn sm" href="results.html?id=${encodeURIComponent(h.id)}" aria-label="View analysis: ${NL.esc(h.title || "Reel")}">View</a></div></div>`).join("")}</div>` : "";
+        <div style="flex:1"><b>${NL.esc(NL.profiles.name(h.profileId))} · ${NL.esc(h.title || "video")}</b><span>${NL.esc(a.summary)}</span></div>
+        <div class="row-actions">${NL.watchLink(h)}<a class="btn sm" href="results.html?id=${encodeURIComponent(h.id)}" aria-label="View analysis: ${NL.esc(h.title || "video")}">View</a></div></div>`).join("")}</div>` : "";
   }
 
   $("kids").addEventListener("click", (e) => {

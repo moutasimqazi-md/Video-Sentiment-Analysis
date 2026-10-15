@@ -163,3 +163,4 @@
 
 .import-cta { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-bottom: 16px; background: linear-gradient(135deg, var(--bg-tint), var(--bg-warm)); border-color: transparent; }
 .import-cta .card-icon { margin: 0; }
+@media (max-width: 560px) { .import-cta { align-items: flex-start; } .import-cta > .btn { width: 100%; justify-content: center; } }

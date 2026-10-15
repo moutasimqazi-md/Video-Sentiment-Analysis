@@ -26,7 +26,7 @@ Map<String, dynamic> sampleResult({String dominant = 'happy', bool image = false
     'dominant_mood': dominant,
     'color_metrics': {'avg_brightness': 55.0, 'avg_saturation': 42.0, 'cuts_per_minute': 18.0},
     'verdict': 'This feels like a $dominant reel.',
-    'mood_labels': {'happy': 'Fun / Trending Reels'},
+    'mood_labels': {'happy': 'Fun / Trending videos'},
     'keyframes': [
       {'t': 3.0, 'mood': dominant, 'score': 60.0, 'url': 'api/keyframes/abc/0.jpg'},
       {'t': 9.0, 'mood': dominant, 'score': 55.0, 'url': 'api/keyframes/abc/1.jpg'},
@@ -36,7 +36,7 @@ Map<String, dynamic> sampleResult({String dominant = 'happy', bool image = false
 }
 
 final planCatalogue = [
-  {'id': 'free', 'name': 'Starter', 'monthly': 0, 'yearly': 0, 'quota': 5, 'history': 10, 'children': 0, 'weekly': false, 'seats': 1, 'blurb': 'Analyze your own Reels and images.', 'features': ['5 analyses / month'], 'off': ['Child profiles and monitoring']},
+  {'id': 'free', 'name': 'Starter', 'monthly': 0, 'yearly': 0, 'quota': 5, 'history': 10, 'children': 0, 'weekly': false, 'seats': 1, 'blurb': 'Analyze your own videos and images.', 'features': ['5 analyses / month'], 'off': ['Child profiles and monitoring']},
   {'id': 'pro', 'name': 'Creator & Family', 'monthly': 12, 'yearly': 9, 'quota': 100, 'history': 200, 'children': 3, 'weekly': true, 'seats': 1, 'featured': true, 'blurb': 'For creators and parents.', 'features': ['100 analyses / month', '3 child profiles'], 'off': []},
   {'id': 'studio', 'name': 'Studio', 'monthly': 39, 'yearly': 29, 'quota': 500, 'history': 1000, 'children': 10, 'weekly': true, 'seats': 5, 'blurb': 'For teams.', 'features': ['500 analyses / month'], 'off': []},
 ];

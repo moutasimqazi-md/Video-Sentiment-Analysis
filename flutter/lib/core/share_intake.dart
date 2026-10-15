@@ -39,7 +39,7 @@ class ShareController extends ChangeNotifier {
     if (text == null || text.trim().isEmpty) return;
     final link = extractLink(text);
     if (link == null) {
-      _problem = "That share didn't contain a link. Share a Reel or video link to NeuroLens.";
+      _problem = "That share didn't contain a link. Share a video link to NeuroLens.";
     } else {
       _pending = link;
       _problem = null;

@@ -103,7 +103,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       const SizedBox(height: 26),
                       Text(_signUp ? 'Create your account' : 'Welcome back', textAlign: TextAlign.center, style: t.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800, height: 1.1)),
                       const SizedBox(height: 8),
-                      Text(_signUp ? 'Analyze Reels, look after your family, and keep your results on every device.' : 'Sign in to pick up where you left off.', textAlign: TextAlign.center, style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+                      Text(_signUp ? 'Analyze videos, look after your family, and keep your results on every device.' : 'Sign in to pick up where you left off.', textAlign: TextAlign.center, style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant)),
                       const SizedBox(height: 22),
                       NlCard(
                         padding: const EdgeInsets.all(20),

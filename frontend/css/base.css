@@ -170,6 +170,7 @@ p { margin: 0; }
 .footer-grid .foot-h { margin: 0 0 14px; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--faint); font-family: var(--font); font-weight: 700; }
 .footer-grid a { display: block; font-size: 14px; padding: 5px 0; color: var(--muted); transition: color .15s; }
 .footer-grid a:hover { color: var(--coral-ink); }
+@media (max-width: 760px) { .footer-grid a { padding: 12px 0; min-height: 44px; display: flex; align-items: center; } }  /* footer links were 32px tall: too small to tap */
 .footer-trust { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
 .footer-trust span { display: inline-flex; gap: 6px; align-items: center; font-size: 12px; font-weight: 600; color: var(--muted); background: var(--surface-2); padding: 6px 10px; border-radius: 999px; }
 .footer-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; padding: 20px 24px 28px; border-top: 1px solid var(--border); font-size: 13px; color: var(--faint); }
@@ -212,3 +213,7 @@ main:focus { outline: none; }
 .back:hover { color: var(--text); background: var(--surface-2); }
 .back .ico-svg { transition: transform .15s; }
 .back:hover .ico-svg { transform: translateX(-3px); }
+
+/* tap targets */
+.brand { min-height: 44px; }
+.link-arrow { display: inline-flex; align-items: center; min-height: 44px; }

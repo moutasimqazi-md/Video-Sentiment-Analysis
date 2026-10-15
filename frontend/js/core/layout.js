@@ -64,9 +64,9 @@
       <footer class="site-footer">
         <div class="container footer-grid">
           <div><a class="brand" href="${root}index.html">${BRAND}</a>
-            <p>Understand the emotions behind every Instagram Reel — for the content you make and the content your family watches.</p>
+            <p>Understand the emotions behind every video on Instagram, YouTube, TikTok and Facebook — for the content you make and the content your family watches.</p>
             <div class="footer-trust"><span>${NL.icon("lock", 14)}Videos deleted after analysis</span><span>${NL.icon("shield", 14)}Private by design</span></div></div>
-          <div><h2 class="foot-h">Product</h2><a href="${page("dashboard")}">Dashboard</a><a href="${page("analyze")}">Analyze a Reel</a><a href="${page("import")}">Import your data</a><a href="${page("feed")}">Feed check</a><a href="${page("family")}">Family monitoring</a><a href="${page("history")}">History</a><a href="${page("pricing")}">Pricing</a></div>
+          <div><h2 class="foot-h">Product</h2><a href="${page("dashboard")}">Dashboard</a><a href="${page("analyze")}">Analyze a video</a><a href="${page("import")}">Import your data</a><a href="${page("feed")}">Feed check</a><a href="${page("family")}">Family monitoring</a><a href="${page("history")}">History</a><a href="${page("pricing")}">Pricing</a></div>
           <div><h2 class="foot-h">Learn</h2><a href="${root}index.html#how">How it works</a><a href="${page("results")}?id=sample">Sample report</a><a href="${root}index.html#faq">FAQ</a><a href="${page("about")}">About</a></div>
           <div><h2 class="foot-h">Account</h2><a href="${page("login")}">Log in</a><a href="${page("account")}">Billing</a><a href="${page("history")}">My analyses</a></div>
         </div>

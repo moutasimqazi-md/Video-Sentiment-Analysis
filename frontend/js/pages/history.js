@@ -22,7 +22,7 @@
 
     if (!items.length) {
       const none = NL.history.list().length === 0;
-      $("list").innerHTML = `<div class="empty"><div class="e-ico">${NL.icon("film", 32)}</div><h3>${none ? "No analyses yet" : "Nothing matches your search"}</h3>
+      $("list").innerHTML = `<div class="empty"><div class="e-ico">${NL.icon("film", 32)}</div><h2 class="h3">${none ? "No analyses yet" : "Nothing matches your search"}</h2>
         <p style="margin:8px 0 16px">${none ? "Run your first analysis, or open the sample report to see what you'll get." : "Try a different word."}</p>
         ${none ? `<a class="btn primary" href="analyze.html">Analyze a video</a> <a class="btn" href="results.html?id=sample">Sample report</a>` : ""}</div>`;
       return;

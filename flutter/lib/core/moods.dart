@@ -10,22 +10,22 @@ class MoodInfo {
 }
 
 const Map<String, MoodInfo> moods = {
-  'confident': MoodInfo('confident', '😎', 'Attitude Reels', Color(0xFF7C5CE6)),
-  'motivated': MoodInfo('motivated', '🔥', 'Motivation Reels', Color(0xFFF08A24)),
-  'focused': MoodInfo('focused', '🎯', 'Gym / Goals Reels', Color(0xFF2F8F6B)),
-  'inspired': MoodInfo('inspired', '✨', 'Transformation Reels', Color(0xFFE0A800)),
-  'excited': MoodInfo('excited', '🎉', 'Celebration Reels', Color(0xFFE5518D)),
-  'happy': MoodInfo('happy', '😄', 'Fun / Trending Reels', Color(0xFFF4B400)),
-  'funny': MoodInfo('funny', '😂', 'Comedy / Relatable Reels', Color(0xFFEF7B3D)),
-  'romantic': MoodInfo('romantic', '💞', 'Love / Couple Reels', Color(0xFFD6457A)),
-  'hungry': MoodInfo('hungry', '😋', 'Food / Cravings Reels', Color(0xFFD9822B)),
-  'peaceful': MoodInfo('peaceful', '🌿', 'Aesthetic / Nature Reels', Color(0xFF3FA37A)),
-  'heartbroken': MoodInfo('heartbroken', '💔', 'Breakup / Emotional Reels', Color(0xFFB4408F)),
-  'sad': MoodInfo('sad', '😢', 'Sad-song / Feeling-low Reels', Color(0xFF4A7CF0)),
-  'angry': MoodInfo('angry', '😠', 'Savage / Rage Reels', Color(0xFFD94A3D)),
-  'lost': MoodInfo('lost', '🧭', 'Deep-thought / Alone Reels', Color(0xFF6C7A99)),
-  'tired': MoodInfo('tired', '😴', 'Burnout / Tired Reels', Color(0xFF8A8F9E)),
-  'depressed': MoodInfo('depressed', '🌑', 'Dark / Numb Reels', Color(0xFF3C4560)),
+  'confident': MoodInfo('confident', '😎', 'Attitude videos', Color(0xFF7C5CE6)),
+  'motivated': MoodInfo('motivated', '🔥', 'Motivation videos', Color(0xFFF08A24)),
+  'focused': MoodInfo('focused', '🎯', 'Gym / Goals videos', Color(0xFF2F8F6B)),
+  'inspired': MoodInfo('inspired', '✨', 'Transformation videos', Color(0xFFE0A800)),
+  'excited': MoodInfo('excited', '🎉', 'Celebration videos', Color(0xFFE5518D)),
+  'happy': MoodInfo('happy', '😄', 'Fun / Trending videos', Color(0xFFF4B400)),
+  'funny': MoodInfo('funny', '😂', 'Comedy / Relatable videos', Color(0xFFEF7B3D)),
+  'romantic': MoodInfo('romantic', '💞', 'Love / Couple videos', Color(0xFFD6457A)),
+  'hungry': MoodInfo('hungry', '😋', 'Food / Cravings videos', Color(0xFFD9822B)),
+  'peaceful': MoodInfo('peaceful', '🌿', 'Aesthetic / Nature videos', Color(0xFF3FA37A)),
+  'heartbroken': MoodInfo('heartbroken', '💔', 'Breakup / Emotional videos', Color(0xFFB4408F)),
+  'sad': MoodInfo('sad', '😢', 'Sad-song / Feeling-low videos', Color(0xFF4A7CF0)),
+  'angry': MoodInfo('angry', '😠', 'Savage / Rage videos', Color(0xFFD94A3D)),
+  'lost': MoodInfo('lost', '🧭', 'Deep-thought / Alone videos', Color(0xFF6C7A99)),
+  'tired': MoodInfo('tired', '😴', 'Burnout / Tired videos', Color(0xFF8A8F9E)),
+  'depressed': MoodInfo('depressed', '🌑', 'Dark / Numb videos', Color(0xFF3C4560)),
 };
 
 String moodEmoji(String? m) => moods[m]?.emoji ?? '🎬';

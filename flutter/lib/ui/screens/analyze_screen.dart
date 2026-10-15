@@ -176,7 +176,7 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
                   keyboardType: TextInputType.url,
                   autocorrect: false,
                   decoration: InputDecoration(
-                    labelText: 'Reel, Short or video links',
+                    labelText: 'Video links',
                     hintText: 'https://www.instagram.com/reel/…\nOne link per line to queue several',
                     alignLabelWithHint: true,
                     suffixIcon: IconButton(tooltip: 'Paste', icon: const Icon(Icons.content_paste), onPressed: _paste),

@@ -124,7 +124,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               child: Column(children: [
                 Text.rich(TextSpan(children: [const TextSpan(text: 'Neuro'), TextSpan(text: 'Lens', style: TextStyle(color: t.colorScheme.primary))]), style: t.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.8)),
                 const SizedBox(height: 8),
-                Text('Know what a Reel makes people feel', style: t.textTheme.bodyLarge?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+                Text('Know what a video makes people feel', style: t.textTheme.bodyLarge?.copyWith(color: t.colorScheme.onSurfaceVariant)),
               ]),
             ),
             const Spacer(flex: 3),
@@ -163,8 +163,8 @@ class _Slide {
 }
 
 const _slides = [
-  _Slide(Icons.auto_awesome, '🎬', 'Know what a Reel makes people feel', 'Paste a link or pick a video or image. NeuroLens reads the visuals and sound, and tells you the mood, with the frames that shaped it.'),
-  _Slide(Icons.family_restroom, '👨‍👩‍👧', 'Look after what your family watches', 'Add a child profile, review the Reels they watch, and see a weekly wellbeing summary.'),
+  _Slide(Icons.auto_awesome, '🎬', 'Know what a video makes people feel', 'Paste a link or pick a video or image. NeuroLens reads the visuals and sound, and tells you the mood, with the frames that shaped it.'),
+  _Slide(Icons.family_restroom, '👨‍👩‍👧', 'Look after what your family watches', 'Add a child profile, review the videos they watch, and see a weekly wellbeing summary.'),
   _Slide(Icons.visibility_outlined, '🔒', 'Check a feed, privately', 'Sign in to Instagram, YouTube, TikTok or Facebook inside a private browser, check what an account is being shown, and get alerts when something needs a look.'),
 ];
 

@@ -11,14 +11,14 @@
 
   if (q.get("id")) {
     const e = q.get("id") === "sample" ? NL.SAMPLE : NL.history.get(q.get("id"));
-    if (e) { entries = [e]; profileId = e.profileId || "me"; title = e.title || "Reel analysis"; sub = `${NL.fmtDate(e.createdAt)} · ${NL.profiles.name(profileId)}`; }
+    if (e) { entries = [e]; profileId = e.profileId || "me"; title = e.title || "video analysis"; sub = `${NL.fmtDate(e.createdAt)} · ${NL.profiles.name(profileId)}`; }
   } else {
     profileId = q.get("profile") || "me";
     const days = Number(q.get("days")) || 7;
     const since = Date.now() - days * 864e5;
     entries = NL.history.list().filter((h) => (h.profileId || "me") === profileId && h.createdAt >= since);
     const who = NL.profiles.name(profileId);
-    title = profileId === "me" ? `My ${days}-day Reels report` : `${who}'s ${days}-day Reels report`;
+    title = profileId === "me" ? `My ${days}-day videos report` : `${who}'s ${days}-day videos report`;
     sub = `${NL.fmtDate(since)} – ${NL.fmtDate(Date.now())}`;
   }
 
@@ -32,11 +32,11 @@
   const forChild = profileId !== "me";
 
   $("rLevel").innerHTML = `<div class="alert-banner ${agg.overall.key}" style="margin:0 0 18px"><div class="ico">${NL.wellbeing.iconSvg(agg.overall)}</div>
-    <div><b>Overall: ${agg.overall.label}</b><p>${agg.count} Reel${agg.count > 1 ? "s" : ""} reviewed · ${agg.heavyShare}% had a heavier emotional tone.</p></div></div>`;
+    <div><b>Overall: ${agg.overall.label}</b><p>${agg.count} video${agg.count > 1 ? "s" : ""} reviewed · ${agg.heavyShare}% had a heavier emotional tone.</p></div></div>`;
 
   const topMood = agg.mix[0];
   $("rStats").innerHTML = [
-    ["Reels reviewed", agg.count],
+    ["videos reviewed", agg.count],
     ["Top emotion", `${NL.moodEmoji(topMood[0])} ${NL.cap(topMood[0])}`],
     ["Worth a look", agg.levels.watch],
     ["High concern", agg.levels.high],
@@ -54,7 +54,7 @@
   }
 
   const tips = forChild ? NL.wellbeing.TIPS : [
-    "Lean into your strongest emotion: your clearest Reels are the ones where one feeling dominates.",
+    "Lean into your strongest emotion: your clearest videos are the ones where one feeling dominates.",
     "Check pacing: fast cuts raise energy, slower cuts feel calmer.",
     "If your feed leaves you drained, balance it with lighter or more peaceful content.",
   ];

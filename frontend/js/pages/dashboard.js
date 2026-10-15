@@ -104,7 +104,7 @@
     $("dashBody").hidden = empty;
     $("demoBar").hidden = !demo;
     $("emptyTitle").textContent = hasAnyHistory ? `No analyses in ${periodText()}` : "No analyses yet";
-    $("emptyText").textContent = hasAnyHistory ? "Try a longer period to see your earlier Reels." : "Analyze your first Reel and your dashboard fills with trends, emotion breakdowns and insights.";
+    $("emptyText").textContent = hasAnyHistory ? "Try a longer period to see your earlier videos." : "Analyze your first video and your dashboard fills with trends, emotion breakdowns and insights.";
     $("widenBtn").hidden = !(hasAnyHistory && days !== 0);
     $("demoOn").hidden = hasAnyHistory;
     const title = profile === "me" ? "Your dashboard" : profile === "all" ? "Everyone's dashboard" : `${NL.profiles.name(profile)}'s dashboard`;
@@ -134,7 +134,7 @@
       kpi("gauge", "green", "Emotion clarity", Math.round(m.avgStrength) + "%", "lead emotion", pm ? fmtDelta(Math.round(m.avgStrength - pm.avgStrength), " pts") : "", C.spark(bks.map((b) => A.avgOf(b.items, (h) => A.top(h)[1]) || 0), "#137350")),
       kpi("heart", "amber", "Positivity", m.positivity + "%", "light-toned", pm ? fmtDelta(m.positivity - pm.positivity, " pts") : "", C.spark(bks.map((b) => (b.items.length ? 100 - A.HEAVY.reduce((a, k) => a + A.avgOf(b.items, (h) => h.result.averages[k] || 0), 0) : 0)), "#e9a23b")),
       kpi("bolt", "", "Average pacing", Math.round(m.avgCuts), "cuts / min", `<span class="muted" style="font-size:12.5px">${pace} pacing</span>`, C.spark(bks.map((b) => A.avgOf(b.items, (h) => (h.result.color_metrics || {}).cuts_per_minute) || 0), "#f4685f")),
-      kpi("clock", "blue", "Current streak", strongStreak, strongStreak === 1 ? "day" : "days", `<span class="muted" style="font-size:12.5px">avg ${Math.round(m.avgDuration)}s per Reel</span>`, ""),
+      kpi("clock", "blue", "Current streak", strongStreak, strongStreak === 1 ? "day" : "days", `<span class="muted" style="font-size:12.5px">avg ${Math.round(m.avgDuration)}s per video</span>`, ""),
     ].join("");
 
     /* Emotion trends: top 5 emotions in the period */
@@ -174,10 +174,10 @@
       $("vsAudio").innerHTML = C.hbars({
         series: [{ name: "Visual", color: "#4a7cf0" }, { name: "Audio", color: "#f4685f" }],
         rows: t6.map((k) => ({ label: k, emoji: "", values: [A.avgOf(withAudio, (h) => (h.result.visual_averages || h.result.averages)[k] || 0), A.avgOf(withAudio, (h) => h.result.audio.averages[k] || 0)] })),
-      }) + `<p class="muted" style="font-size:12.5px;margin-top:12px">Based on ${withAudio.length} ${withAudio.length === 1 ? "Reel" : "Reels"} with a soundtrack. Values are visual / audio.</p>`;
+      }) + `<p class="muted" style="font-size:12.5px;margin-top:12px">Based on ${withAudio.length} ${withAudio.length === 1 ? "video" : "videos"} with a soundtrack. Values are visual / audio.</p>`;
       $("vsAudio").setAttribute("role", "group");
       $("vsAudio").setAttribute("aria-label", "Visual versus audio score for your top six emotions");
-    } else $("vsAudio").innerHTML = `<p class="muted">None of these Reels had an analyzable soundtrack.</p>`;
+    } else $("vsAudio").innerHTML = `<p class="muted">None of these videos had an analyzable soundtrack.</p>`;
 
     /* Activity heatmap (last 12 weeks) */
     const mine = all.filter((h) => profile === "all" || (h.profileId || "me") === profile);
@@ -198,12 +198,12 @@
     /* Pacing vs strength scatter */
     const pts = cur.filter((h) => (h.result.color_metrics || {}).cuts_per_minute != null).map((h) => {
       const [mood, v] = A.top(h);
-      return { x: h.result.color_metrics.cuts_per_minute, y: v, color: C.moodColor(mood), tip: `${h.title || "Reel"} · ${NL.cap(mood)} ${v.toFixed(0)}% · ${h.result.color_metrics.cuts_per_minute} cuts/min`, mood, title: h.title || "Reel" };
+      return { x: h.result.color_metrics.cuts_per_minute, y: v, color: C.moodColor(mood), tip: `${h.title || "video"} · ${NL.cap(mood)} ${v.toFixed(0)}% · ${h.result.color_metrics.cuts_per_minute} cuts/min`, mood, title: h.title || "video" };
     });
     if (pts.length) {
       $("scatter").innerHTML = C.scatter({ points: pts, xLabel: "Cuts per minute (pacing)", yLabel: "Lead emotion strength", width: cw("scatter", 640), height: ch(cw("scatter", 640), 0.5, 220, 300) });
-      describe("scatter", `Scatter plot of ${pts.length} Reels showing pacing in cuts per minute against lead emotion strength.`,
-        table("Pacing and lead emotion strength per Reel", ["Reel", "Cuts per minute", "Lead emotion", "Strength"], pts.map((p) => [p.title, String(p.x), NL.cap(p.mood), Math.round(p.y) + "%"])));
+      describe("scatter", `Scatter plot of ${pts.length} videos showing pacing in cuts per minute against lead emotion strength.`,
+        table("Pacing and lead emotion strength per video", ["video", "Cuts per minute", "Lead emotion", "Strength"], pts.map((p) => [p.title, String(p.x), NL.cap(p.mood), Math.round(p.y) + "%"])));
     } else $("scatter").innerHTML = `<p class="muted">No pacing data yet.</p>`;
 
     /* Look & feel */

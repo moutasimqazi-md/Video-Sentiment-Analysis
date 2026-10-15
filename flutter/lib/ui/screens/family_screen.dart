@@ -64,7 +64,7 @@ class FamilyScreen extends StatelessWidget {
           ? EmptyState(
               icon: Icons.family_restroom,
               title: 'No child profiles yet',
-              text: 'Add one to review the Reels they watch, see a weekly summary, and get alerts when something needs a look.',
+              text: 'Add one to review the videos they watch, see a weekly summary, and get alerts when something needs a look.',
               action: FilledButton.icon(onPressed: () => _add(context), icon: const Icon(Icons.add), label: const Text('Add a child')),
             )
           : ListView(padding: const EdgeInsets.fromLTRB(16, 4, 16, 96), children: [
@@ -77,7 +77,7 @@ class FamilyScreen extends StatelessWidget {
                   const SectionTitle('Talking about what they watch'),
                   for (final tip in const [
                     'Ask open questions: "What did you like about that one?" works better than "Why are you watching that?"',
-                    'Watch a few Reels together and talk about how they make you both feel.',
+                    'Watch a few videos together and talk about how they make you both feel.',
                     'Agree on screen-free times, for example the hour before bed. Heavy content hits hardest late at night.',
                   ])
                     Padding(padding: const EdgeInsets.only(bottom: 8), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(Icons.check_circle_outline, size: 18, color: t.colorScheme.primary), const SizedBox(width: 10), Expanded(child: Text(tip))])),
@@ -145,7 +145,7 @@ class _ChildCard extends StatelessWidget {
               context.read<ShellNav>().go(ShellNav.analyze);
             },
             icon: const Icon(Icons.add, size: 18),
-            label: const Text('Analyze a Reel'),
+            label: const Text('Analyze a video'),
           ),
           OutlinedButton.icon(style: OutlinedButton.styleFrom(minimumSize: const Size(0, 42)), onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => HistoryScreen(profileId: child.id))), icon: const Icon(Icons.history, size: 18), label: const Text('History')),
           OutlinedButton.icon(style: OutlinedButton.styleFrom(minimumSize: const Size(0, 42)), onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => FeedScreen(profileId: child.id))), icon: const Icon(Icons.visibility_outlined, size: 18), label: const Text('Feed monitoring')),

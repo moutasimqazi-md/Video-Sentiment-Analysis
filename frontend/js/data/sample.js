@@ -27,7 +27,7 @@ NL.SAMPLE = {
       },
     },
     color_metrics: { avg_brightness: 58.2, avg_saturation: 47.5, cuts_per_minute: 9.4 },
-    verdict: "This video mostly feels peaceful (Aesthetic / Nature Reels). Soft, warm light and slow cuts create a calm mood, and the gentle soundtrack reinforces it.",
+    verdict: "This video mostly feels peaceful (Aesthetic / Nature videos). Soft, warm light and slow cuts create a calm mood, and the gentle soundtrack reinforces it.",
     timeline: [0, 2.3, 4.6, 6.9, 9.1, 11.4, 13.7, 16, 18.3, 20.6, 22.8, 25.1].map((t, i) => ({
       t,
       peaceful: [58, 66, 71, 74, 72, 77, 70, 75, 79, 73, 68, 74][i] / 100,

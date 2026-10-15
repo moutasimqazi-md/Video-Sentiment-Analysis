@@ -56,9 +56,9 @@ NL.wellbeing = (() => {
 
   const TIPS = [
     "Ask open questions: \"What did you like about that one?\" works better than \"Why are you watching that?\"",
-    "Watch a few Reels together and talk about how they make you both feel.",
+    "Watch a few videos together and talk about how they make you both feel.",
     "Agree on screen-free times (for example, the hour before bed). Heavy content hits hardest late at night.",
-    "Use Instagram's Sensitive Content Control and Time Limit settings together.",
+    "Use the app's sensitive-content controls and time limits together.",
     "If you're worried about your child's safety, talk to them directly and contact a school counselor, doctor or local crisis service.",
   ];
 

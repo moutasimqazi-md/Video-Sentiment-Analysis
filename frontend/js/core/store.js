@@ -6,8 +6,8 @@ NL.PLANS = {
   free: {
     id: "free", name: "Starter", monthly: 0, yearly: 0, quota: 5, history: 10,
     link: true, export: true, children: 0, weekly: false, seats: 1,
-    blurb: "Analyze your own Reels and download a report.",
-    features: ["5 Reel analyses / month", "Paste video links (Instagram, YouTube, TikTok, Facebook) or upload", "Download & print reports", "Emotion timeline + wellbeing signal", "Last 10 analyses saved"],
+    blurb: "Analyze your own videos and download a report.",
+    features: ["5 video analyses / month", "Paste video links (Instagram, YouTube, TikTok, Facebook) or upload", "Download & print reports", "Emotion timeline + wellbeing signal", "Last 10 analyses saved"],
     off: ["Child monitoring profiles", "Weekly summary reports"],
   },
   pro: {

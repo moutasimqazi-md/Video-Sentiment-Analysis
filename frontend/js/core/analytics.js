@@ -98,7 +98,7 @@ NL.analytics = (() => {
       const d = Math.round(m.avgStrength - prev.avgStrength);
       if (Math.abs(d) >= 3) out.push({ icon: d > 0 ? "trend" : "chart", tone: d > 0 ? "green" : "amber", title: d > 0 ? "Emotion is getting clearer" : "Emotion is getting blurrier", text: `Your lead emotion strength moved ${d > 0 ? "up" : "down"} ${Math.abs(d)} points versus the previous period.` });
     }
-    if (m.heavyShare >= 40) out.push({ icon: "heart", tone: "coral", title: "Heavier tone showing up", text: `${m.heavyShare}% of these Reels carry a heavier emotional tone. If that's intentional, great; if not, balance with lighter content.` });
+    if (m.heavyShare >= 40) out.push({ icon: "heart", tone: "coral", title: "Heavier tone showing up", text: `${m.heavyShare}% of these videos carry a heavier emotional tone. If that's intentional, great; if not, balance with lighter content.` });
     if (m.avgBright < 35) out.push({ icon: "sun", tone: "amber", title: "Your videos run dark", text: `Average brightness is ${m.avgBright.toFixed(0)}%. Brighter footage tends to read as warmer and more inviting.` });
     return out;
   }

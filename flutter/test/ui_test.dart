@@ -37,7 +37,7 @@ void main() {
       final (api, _, settings) = await fakeApi((r) async => json({'learning': true}), token: null);
       await tester.pumpWidget(NeuroLensApp(settings: settings, api: api));
       await tester.pump(const Duration(milliseconds: 600));
-      expect(find.text('Know what a Reel makes people feel'), findsOneWidget); // the splash
+      expect(find.text('Know what a video makes people feel'), findsOneWidget); // the splash
       expect(find.text('Connecting…'), findsOneWidget);
       await tester.pump(const Duration(milliseconds: 2200));
       await tester.pump(const Duration(milliseconds: 600));
@@ -51,7 +51,7 @@ void main() {
       await tester.pumpWidget(NeuroLensApp(settings: settings, api: api));
       await tester.pump(const Duration(milliseconds: 2500));
       await tester.pump(const Duration(milliseconds: 600));
-      expect(find.text('Analyze a Reel, video or image'), findsOneWidget);
+      expect(find.text('Analyze a video or image'), findsOneWidget);
       expect(find.textContaining('Alice'), findsWidgets); // greeted by name
       expect(log.any((l) => l.request.url.path.endsWith('/api/me')), isTrue);
     });
@@ -73,14 +73,14 @@ void main() {
       phone(tester);
       final (api, _, settings) = await fakeApi((r) async => json({}), intro: false);
       await boot(tester, api, settings);
-      expect(find.text('Know what a Reel makes people feel'), findsOneWidget);
+      expect(find.text('Know what a video makes people feel'), findsOneWidget);
       await tester.tap(find.text('Next'));
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(const Duration(milliseconds: 600));
       expect(find.text('Look after what your family watches'), findsOneWidget);
       await tester.tap(find.text('Skip'));
       await tester.pump(const Duration(milliseconds: 600));
-      expect(find.text('Analyze a Reel, video or image'), findsOneWidget);
+      expect(find.text('Analyze a video or image'), findsOneWidget);
       expect(settings.introSeen, isTrue);
     });
   });
@@ -129,7 +129,7 @@ void main() {
       }
       expect(settings.sessionToken, 'new-session');
       expect(log.firstWhere((l) => l.request.url.path.endsWith('/signup')).body, contains('"email":"alice@example.com"'));
-      expect(find.text('Know what a Reel makes people feel'), findsOneWidget); // the intro, because this account is new on this phone
+      expect(find.text('Know what a video makes people feel'), findsOneWidget); // the intro, because this account is new on this phone
     });
 
     testWidgets('an email that is already registered shows the server message', (tester) async {
@@ -165,7 +165,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
       }
       expect(settings.sessionToken, 'session-x');
-      expect(find.text('Analyze a Reel, video or image'), findsOneWidget);
+      expect(find.text('Analyze a video or image'), findsOneWidget);
     });
 
     testWidgets('the password can be shown and hidden', (tester) async {

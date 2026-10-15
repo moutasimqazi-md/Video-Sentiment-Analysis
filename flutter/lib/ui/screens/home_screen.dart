@@ -56,7 +56,7 @@ class HomeScreen extends StatelessWidget {
             ),
             padding: const EdgeInsets.all(20),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Analyze a Reel, video or image', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+              const Text('Analyze a video or image', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
               const SizedBox(height: 6),
               const Text('Paste a link or choose a file. You can add several and keep browsing.', style: TextStyle(color: Colors.white, height: 1.35)),
               const SizedBox(height: 14),
@@ -104,7 +104,7 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text('Your results and weekly summary appear here. Pick where to begin:', style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
                 const SizedBox(height: 10),
-                _Step(icon: Icons.add_circle_outline, title: 'Analyze a Reel', sub: 'Paste a link or choose a video', onTap: () => context.read<ShellNav>().go(ShellNav.analyze)),
+                _Step(icon: Icons.add_circle_outline, title: 'Analyze a video', sub: 'Paste a link or choose a video', onTap: () => context.read<ShellNav>().go(ShellNav.analyze)),
                 _Step(icon: Icons.upload_file_outlined, title: 'Import your history', sub: 'Instagram, YouTube, TikTok or Facebook export → habits report', onTap: () => context.read<ShellNav>().go(ShellNav.import)),
                 _Step(icon: Icons.visibility_outlined, title: 'Check a feed', sub: 'Sign in to Instagram, YouTube, TikTok or Facebook and review what it shows', onTap: () => context.read<ShellNav>().go(ShellNav.feed)),
               ]),
@@ -161,7 +161,7 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(width: 14),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   const Text('Looking after a child?', style: TextStyle(fontWeight: FontWeight.w800)),
-                  Text('Add a profile to review the Reels they watch and get alerts.', style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+                  Text('Add a profile to review the videos they watch and get alerts.', style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
                 ])),
                 const Icon(Icons.chevron_right),
               ]),

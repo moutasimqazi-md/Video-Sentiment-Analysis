@@ -360,3 +360,6 @@
 .moments img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 12px; background: var(--surface-2); display: block; }
 .moments figcaption { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
 textarea.input { resize: vertical; min-height: 84px; font-family: inherit; }
+
+/* the two hero buttons were different widths and left-aligned on a phone */
+@media (max-width: 520px) { .hero .cta .btn { flex: 1 1 100%; justify-content: center; text-align: center; } }
