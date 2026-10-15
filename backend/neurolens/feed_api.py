@@ -1,4 +1,7 @@
-"""Routes for Instagram session login, feed checks, child monitoring, alerts and push.
+"""Routes for sign-in, feed checks, child monitoring, alerts and push, for Instagram, YouTube, TikTok and Facebook.
+
+Every route that touches a session takes `platform` ("ig" by default, so callers written before other sites existed keep working).
+A person's session on a site is one session key (platforms.py): the profile id for Instagram, `<profile>.<site>` for the others.
 
 Callers are either the owner (this computer or a paired browser: original ids) or a signed-in user (X-User-Token): a user's ids
 are stored under their own prefix, and they can only ever see and change their own."""
@@ -13,7 +16,7 @@ from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket
 from pydantic import BaseModel
 
-from neurolens import accounts, browser, guard, live, logstore, monitorstore, push, scanner
+from neurolens import accounts, browser, guard, live, logstore, monitorstore, platforms, push, scanner
 
 router = APIRouter(prefix="/api")
 owner = Depends(guard.require_owner)
@@ -24,13 +27,37 @@ def _browser_ready():
     """Signing in and scanning drive a real browser (Playwright) and stream it over a WebSocket. A host that has neither, such as
     cPanel's Passenger, says so plainly instead of failing halfway. NL_FEED=0 switches the routes off on purpose."""
     if os.environ.get("NL_FEED") == "0" or importlib.util.find_spec("playwright") is None:
-        raise HTTPException(503, "Instagram checks aren't available on this server.")
+        raise HTTPException(503, "Feed check isn't available on this server.")
 
 
 browser_ready = Depends(_browser_ready)
 PID = re.compile(r"^[a-z0-9_-]{1,40}$")
 USER_PID = re.compile(r"^[a-z0-9_-]{1,30}$")
 HEX32 = re.compile(r"^[0-9a-f]{32}$")
+
+
+def _plat(code):
+    code = (code or "ig").lower()
+    if code not in platforms.PLATFORMS:
+        raise HTTPException(400, "Unknown site. Choose Instagram, YouTube, TikTok or Facebook.")
+    return code
+
+
+def _sk(a, pid, code="ig"):
+    """The session key for this caller's profile on a site (validates the profile id too)."""
+    return platforms.session_key(_ns(a, pid), _plat(code))
+
+
+def _sks(a, pid, code=None):
+    """One site's session key, or (no site given) every site's, for a profile."""
+    ns = _ns(a, pid)
+    return [platforms.session_key(ns, _plat(code))] if code else [platforms.session_key(ns, c) for c in platforms.CODES]
+
+
+def _out(a, sk):
+    """session key -> (the caller-facing profile id, site code)"""
+    base, code = platforms.split_key(sk)
+    return a.out(base), code
 
 
 def _ns(a, pid):
@@ -83,38 +110,46 @@ def owner_check():
 
 
 # ---------------- session ----------------
+@router.get("/platforms")
+def platform_list():
+    """The sites a feed check can read, and which checks each one has."""
+    return [{"id": c, "name": P["name"], "modes": [{"id": m, "label": l} for m, l in P["modes"].items()]} for c, P in platforms.PLATFORMS.items()]
+
+
 @router.get("/sessions/{pid}")
-def session_status(pid: str, a=who):
-    pid = _ns(a, pid)
-    return {"connected": browser.connected_at(pid), "login": live.status(pid)}
+def session_status(pid: str, platform: str = "ig", a=who):
+    sk = _sk(a, pid, platform)
+    return {"connected": browser.connected_at(sk), "login": live.status(sk), "platform": _plat(platform)}
+
+
+def _consent_needed(raw, sk):
+    if raw != "me":
+        m = monitorstore.get_monitor(sk)
+        if not (m and m.get("consent_at")):
+            raise HTTPException(400, "Confirm that your child knows before connecting their account.")
 
 
 @router.post("/sessions/{pid}/login", dependencies=[browser_ready])
-def session_login(pid: str, a=who):
-    raw = pid
-    pid = _ns(a, pid)
-    if raw != "me":
-        m = monitorstore.get_monitor(pid)
-        if not (m and m.get("consent_at")):
-            raise HTTPException(400, "Confirm that your child knows before connecting their account.")
-    lv = live.start(pid)
+def session_login(pid: str, platform: str = "ig", a=who):
+    sk = _sk(a, pid, platform)
+    _consent_needed(pid, sk)
+    lv = live.start(sk)
     return {"state": lv.state}
 
 
 @router.post("/sessions/{pid}/view-token", dependencies=[browser_ready])
-def session_view_token(pid: str, a=who):
+def session_view_token(pid: str, platform: str = "ig", a=who):
     """A single-use, 60-second key for the WebSocket that streams the private browser."""
-    pid = _ns(a, pid)
-    cur = live.get(pid)
+    sk = _sk(a, pid, platform)
+    cur = live.get(sk)
     if not cur or cur.state not in ("starting", "live") or cur.stopping:
         raise HTTPException(400, "The private browser isn't open. Start it again.")
-    return {"token": live.view_token(pid)}
+    return {"token": live.view_token(sk)}
 
 
 @router.post("/sessions/{pid}/login/cancel")
-def session_login_cancel(pid: str, a=who):
-    pid = _ns(a, pid)
-    live.cancel(pid)
+def session_login_cancel(pid: str, platform: str = "ig", a=who):
+    live.cancel(_sk(a, pid, platform))
     return {"ok": True}
 
 
@@ -189,44 +224,41 @@ async def session_view(ws: WebSocket, pid: str):
 
 
 @router.post("/sessions/{pid}/connected")
-def session_connected(pid: str, a=who):
+def session_connected(pid: str, platform: str = "ig", a=who):
     """Called once the sign-in window reports done, to stamp the monitor row."""
-    pid = _ns(a, pid)
-    at = browser.connected_at(pid)
-    if at and monitorstore.get_monitor(pid):
-        monitorstore.save_monitor(pid, connected_at=at, status="ok", status_at=time.time())
+    sk = _sk(a, pid, platform)
+    at = browser.connected_at(sk)
+    if at and monitorstore.get_monitor(sk):
+        monitorstore.save_monitor(sk, connected_at=at, status="ok", status_at=time.time())
     return {"connected": at}
 
 
 class ImportIn(BaseModel):
     cookies: list[dict]
+    platform: str = "ig"
 
 
 @router.post("/sessions/{pid}/import", dependencies=[browser_ready])
 def session_import(pid: str, body: ImportIn, a=who):
-    """The app signed in to Instagram on the phone itself and hands over that session, so scans can run on the server."""
-    raw = pid
-    pid = _ns(a, pid)
-    if raw != "me":
-        m = monitorstore.get_monitor(pid)
-        if not (m and m.get("consent_at")):
-            raise HTTPException(400, "Confirm that your child knows before connecting their account.")
+    """The app signed in on the phone itself and hands over that session, so scans can run on the server."""
+    sk = _sk(a, pid, body.platform)
+    _consent_needed(pid, sk)
     try:
-        at = browser.import_session(pid, body.cookies)
+        at = browser.import_session(sk, body.cookies)
     except ValueError as e:
         raise HTTPException(400, str(e))
-    if monitorstore.get_monitor(pid):
-        monitorstore.save_monitor(pid, connected_at=at, status="ok", status_at=time.time())
+    if monitorstore.get_monitor(sk):
+        monitorstore.save_monitor(sk, connected_at=at, status="ok", status_at=time.time())
     return {"connected": at}
 
 
 @router.delete("/sessions/{pid}")
-def session_disconnect(pid: str, a=who):
-    pid = _ns(a, pid)
-    live.cancel(pid)
-    browser.disconnect(pid)
-    if monitorstore.get_monitor(pid):
-        monitorstore.save_monitor(pid, connected_at=None, enabled=0, status="disconnected")
+def session_disconnect(pid: str, platform: str = "ig", a=who):
+    sk = _sk(a, pid, platform)
+    live.cancel(sk)
+    browser.disconnect(sk)
+    if monitorstore.get_monitor(sk):
+        monitorstore.save_monitor(sk, connected_at=None, enabled=0, status="disconnected")
     return {"ok": True}
 
 
@@ -236,10 +268,12 @@ class MonitorIn(BaseModel):
     enabled: bool = False
     interval_min: int = 120
     consent: bool = False
+    platform: str = "ig"
 
 
 def _monitor_out(m, a):
-    return {**m, "profile_id": a.out(m["profile_id"]), "connected": browser.connected_at(m["profile_id"]) is not None, "consent": bool(m.get("consent_at"))}
+    pid, code = _out(a, m["profile_id"])
+    return {**m, "profile_id": pid, "platform": code, "connected": browser.connected_at(m["profile_id"]) is not None, "consent": bool(m.get("consent_at"))}
 
 
 @router.get("/monitors")
@@ -250,9 +284,10 @@ def monitors(a=who):
 @router.put("/monitors/{pid}")
 def put_monitor(pid: str, body: MonitorIn, a=who):
     raw = pid
-    pid = _ns(a, pid)
+    base = _ns(a, pid)
+    pid = _sk(a, raw, body.platform)
     cur = monitorstore.get_monitor(pid) or {}
-    if a.is_user and raw != "me" and not cur:
+    if a.is_user and raw != "me" and not cur and base not in accounts.kid_bases(a.uid):  # another site for a child already counted is not another child
         plan = accounts.plan_of(a.uid)
         if accounts.children_used(a.uid) >= plan["children"]:
             raise HTTPException(402, f"The {plan['name']} plan has no child profiles. Upgrade to add one." if plan["children"] == 0 else f"The {plan['name']} plan includes {plan['children']} child profiles. Upgrade to add more.")
@@ -281,15 +316,20 @@ class ScanIn(BaseModel):
     kind: str = "explore"
     terms: list[str] = []
     limit: int = 10
+    platform: str = "ig"
 
 
 @router.post("/scans", dependencies=[browser_ready])
 def start_scan(body: ScanIn, a=who):
-    pid = _ns(a, body.profile)
+    code = _plat(body.platform)
+    pid = _sk(a, body.profile, code)
+    site = platforms.name(code)
     if body.kind not in scanner.KINDS:
         raise HTTPException(400, "Unknown scan type")
+    if body.kind not in platforms.PLATFORMS[code]["modes"]:
+        raise HTTPException(400, f"{site} doesn't have a \"{scanner.KINDS[body.kind]}\" check. Choose one of: {', '.join(platforms.PLATFORMS[code]['modes'].values())}.")
     if browser.connected_at(pid) is None:
-        raise HTTPException(400, "Log in to Instagram first.")
+        raise HTTPException(400, f"Log in to {site} first.")
     m = monitorstore.get_monitor(pid)
     if body.profile != "me" and not (m and m.get("consent_at")):
         raise HTTPException(400, "Confirm that your child knows before checking their account.")
@@ -302,13 +342,16 @@ def start_scan(body: ScanIn, a=who):
 
 
 def _scan_out(s, a):
-    return {**s, "profile": a.out(s["profile"])}
+    pid, code = _out(a, s["profile"])
+    return {**s, "profile": pid, "platform": code}
 
 
 @router.get("/scans")
-def scans(profile: str | None = None, a=who):
-    pid = _ns(a, profile) if profile else None
-    return [_scan_out(s, a) for s in monitorstore.list_scans(pid, prefix=a.prefix or None)]
+def scans(profile: str | None = None, platform: str | None = None, a=who):
+    if not profile:
+        return [_scan_out(s, a) for s in monitorstore.list_scans(None, prefix=a.prefix or None)]
+    rows = [s for sk in _sks(a, profile, platform) for s in monitorstore.list_scans(sk, prefix=a.prefix or None)]  # no site given: all of that profile's sites
+    return [_scan_out(s, a) for s in sorted(rows, key=lambda r: -(r["createdAt"] or 0))[:20]]
 
 
 @router.get("/scans/{sid}")
@@ -321,10 +364,14 @@ def scan(sid: str, a=who):
 
 # ---------------- alerts ----------------
 @router.get("/alerts")
-def alerts(profile: str | None = None, since: float = 0, limit: int = 50, a=who):
-    pid = _ns(a, profile) if profile else None
-    r = monitorstore.list_alerts(pid, since, min(limit, 200), prefix=a.prefix or None)
-    r["alerts"] = [{**x, "profile": a.out(x["profile"])} for x in r["alerts"]]
+def alerts(profile: str | None = None, platform: str | None = None, since: float = 0, limit: int = 50, a=who):
+    limit = min(limit, 200)
+    if not profile:
+        r = monitorstore.list_alerts(None, since, limit, prefix=a.prefix or None)
+    else:  # one profile: one site's alerts, or (no site given) all of that profile's sites together
+        parts = [monitorstore.list_alerts(sk, since, limit, prefix=a.prefix or None) for sk in _sks(a, profile, platform)]
+        r = {"alerts": sorted((x for p in parts for x in p["alerts"]), key=lambda x: -x["createdAt"])[:limit], "unread": sum(p["unread"] for p in parts)}
+    r["alerts"] = [{**x, "profile": _out(a, x["profile"])[0], "platform": _out(a, x["profile"])[1]} for x in r["alerts"]]
     return r
 
 

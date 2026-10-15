@@ -11,18 +11,13 @@ import '../../core/stores.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import '../widgets/tab_bar.dart';
-import 'instagram_signin.dart';
-import 'results_screen.dart';
+import '../../core/platforms.dart';
 import 'plans_screen.dart';
+import 'private_browser.dart';
+import 'results_screen.dart';
+import 'site_signin.dart';
 
-const _kinds = [
-  ('explore', 'Explore', 'What Instagram suggests to this account', Icons.explore_outlined),
-  ('foryou', 'For You reels', 'The reels feed, scrolled a few times', Icons.movie_outlined),
-  ('terms', 'Search topics', 'Top posts for topics you enter', Icons.search),
-  ('profile', 'Account review', "How the account's own posts come across", Icons.insights_outlined),
-];
-
-/// Feed check: sign in to Instagram privately, check what a feed is showing, review an account, and (for a child) set up monitoring.
+/// Feed check: sign in to Instagram, YouTube, TikTok or Facebook privately, check what a feed is showing, review an account, and (for a child) set up monitoring.
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key, this.profileId});
   final String? profileId;
@@ -33,12 +28,13 @@ class FeedScreen extends StatefulWidget {
 
 class _FeedScreenState extends State<FeedScreen> {
   late String _pid = widget.profileId ?? 'me';
+  Site _site = sites.first;
   Map<String, dynamic> _session = const {};
   MonitorSettings? _monitor;
   List<ScanReport> _past = const [];
   List<AlertItem> _alerts = const [];
   ScanReport? _report;
-  String _kind = 'explore';
+  String _kind = sites.first.modes.first.id;
   int _limit = 10;
   final _terms = TextEditingController();
   bool _consent = false, _monOn = false, _loading = true, _running = false;
@@ -72,10 +68,10 @@ class _FeedScreenState extends State<FeedScreen> {
       _error = null;
     });
     try {
-      _session = await _api.session(_pid);
+      _session = await _api.session(_pid, platform: _site.code);
       final mons = await _api.monitors();
-      _monitor = mons.where((m) => m.profileId == _pid).firstOrNull;
-      _past = await _api.scans(_pid);
+      _monitor = mons.where((m) => m.profileId == _pid && m.platform == _site.code).firstOrNull;
+      _past = await _api.scans(_pid, platform: _site.code);
       _alerts = _child ? (await _api.alerts(profile: _pid, limit: 10)).alerts : const [];
       _consent = _monitor?.consent ?? false;
       _monOn = _monitor?.enabled ?? false;
@@ -86,11 +82,26 @@ class _FeedScreenState extends State<FeedScreen> {
     if (mounted) setState(() => _loading = false);
   }
 
+  void _pickSite(Site s) {
+    if (s.code == _site.code) return;
+    _timer?.cancel();
+    setState(() {
+      _site = s;
+      _kind = s.modes.first.id;
+      _report = null;
+      _running = false;
+      _error = null;
+      _session = const {};
+      _monitor = null;
+    });
+    _load();
+  }
+
   Future<void> _signIn() async {
     final profiles = context.read<ProfilesStore>();
     try {
       if (_child && !(_monitor?.consent ?? false)) {
-        _monitor = await _api.saveMonitor(_pid, name: profiles.nameOf(_pid), enabled: false, intervalMin: _every, consent: true); // record that the child knows first
+        _monitor = await _api.saveMonitor(_pid, name: profiles.nameOf(_pid), enabled: false, intervalMin: _every, consent: true, platform: _site.code); // record that the child knows first
       }
     } on ApiException catch (e) {
       setState(() => _error = e.message);
@@ -98,13 +109,13 @@ class _FeedScreenState extends State<FeedScreen> {
       return;
     }
     if (!mounted) return;
-    final ok = await Navigator.of(context).push<bool>(MaterialPageRoute(fullscreenDialog: true, builder: (_) => InstagramSignInScreen(profileId: _pid)));
+    final ok = await Navigator.of(context).push<bool>(MaterialPageRoute(fullscreenDialog: true, builder: (_) => _site.phoneSignIn ? SiteSignInScreen(profileId: _pid, site: _site) : PrivateBrowserScreen(profileId: _pid, platform: _site.code)));
     if (ok == true) await _load();
   }
 
   Future<void> _saveMonitor() async {
     try {
-      _monitor = await _api.saveMonitor(_pid, name: context.read<ProfilesStore>().nameOf(_pid), enabled: _monOn && _consent, intervalMin: _every, consent: _consent);
+      _monitor = await _api.saveMonitor(_pid, name: context.read<ProfilesStore>().nameOf(_pid), enabled: _monOn && _consent, intervalMin: _every, consent: _consent, platform: _site.code);
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Monitoring settings saved')));
       await _load();
     } on ApiException catch (e) {
@@ -124,7 +135,7 @@ class _FeedScreenState extends State<FeedScreen> {
     try {
       if (_child && !_consent) throw ApiException('Tick the confirmation that your child knows, and save, first.');
       final terms = _terms.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-      final id = await _api.startScan(_pid, _kind, terms: terms, limit: _limit);
+      final id = await _api.startScan(_pid, _kind, terms: terms, limit: _limit, platform: _site.code);
       _timer?.cancel();
       _timer = Timer.periodic(const Duration(seconds: 2), (_) => _poll(id));
       _poll(id);
@@ -193,6 +204,14 @@ class _FeedScreenState extends State<FeedScreen> {
         child: ListView(padding: const EdgeInsets.fromLTRB(16, 4, 16, 28), children: [
           Text('Sign in once, privately. NeuroLens checks what an account is being served and writes a short report.', style: t.textTheme.bodyMedium?.copyWith(color: t.colorScheme.onSurfaceVariant)),
           const SizedBox(height: 14),
+          // ---- which site
+          NlCard(
+            child: Wrap(spacing: 8, runSpacing: 8, children: [
+              for (final s in sites)
+                ChoiceChip(avatar: Icon(s.icon, size: 18), label: Text(s.name), selected: s.code == _site.code, onSelected: _running ? null : (_) => _pickSite(s)),
+            ]),
+          ),
+          const SizedBox(height: 14),
           // ---- who
           NlCard(
             child: DropdownButtonFormField<String>(
@@ -228,7 +247,7 @@ class _FeedScreenState extends State<FeedScreen> {
                       _consent = v ?? false;
                       if (!_consent) _monOn = false;
                     }),
-                    title: Text("${profiles.nameOf(_pid)} knows I check what their Instagram shows. I'll talk with them about it."),
+                    title: Text("${profiles.nameOf(_pid)} knows I check what their ${_site.name} shows. I'll talk with them about it."),
                   ),
                   SwitchListTile(contentPadding: EdgeInsets.zero, value: _monOn, onChanged: _consent ? (v) => setState(() => _monOn = v) : null, title: const Text('Check automatically and alert me')),
                   DropdownButtonFormField<int>(
@@ -262,16 +281,16 @@ class _FeedScreenState extends State<FeedScreen> {
                 Row(children: [
                   Container(width: 10, height: 10, decoration: BoxDecoration(color: _connected ? NlColors.green : t.colorScheme.onSurfaceVariant, shape: BoxShape.circle)),
                   const SizedBox(width: 10),
-                  Expanded(child: Text(_connected ? 'Instagram connected' : 'Not connected', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
+                  Expanded(child: Text(_connected ? '${_site.name} connected' : 'Not connected', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
                   if (_connected)
                     TextButton(
                       onPressed: () async {
                         final ok = await showDialog<bool>(
                           context: context,
-                          builder: (c) => AlertDialog(title: const Text('Disconnect Instagram?'), content: const Text('The saved session is deleted from the server. Automatic checks stop.'), actions: [TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')), TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Disconnect'))]),
+                          builder: (c) => AlertDialog(title: Text('Disconnect ${_site.name}?'), content: const Text('The saved session is deleted from the server. Automatic checks stop.'), actions: [TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')), TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Disconnect'))]),
                         );
                         if (ok == true) {
-                          await _api.disconnect(_pid);
+                          await _api.disconnect(_pid, platform: _site.code);
                           _load();
                         }
                       },
@@ -280,12 +299,13 @@ class _FeedScreenState extends State<FeedScreen> {
                 ]),
                 if (!_connected) ...[
                   const SizedBox(height: 8),
-                  const _Tick("Instagram's own sign-in page opens inside the app."),
-                  const _Tick('You type your login straight into Instagram. NeuroLens never sees your password.'),
+                  _Tick(_site.phoneSignIn ? "${_site.name}'s own sign-in page opens inside the app." : 'A private browser, run by the NeuroLens server, opens inside the app.'),
+                  _Tick('You type your login straight into ${_site.name}. NeuroLens never sees your password.'),
                   const _Tick('Once you are in, the sign-in session is kept on the NeuroLens server so checks can run. Disconnect any time to delete it.'),
                   const SizedBox(height: 14),
-                  FilledButton.icon(onPressed: (_child && !_consent) ? null : _signIn, icon: const Icon(Icons.lock_open), label: const Text('Sign in to Instagram')),
+                  FilledButton.icon(onPressed: (_child && !_consent) ? null : _signIn, icon: const Icon(Icons.lock_open), label: Text('Sign in to ${_site.name}')),
                   if (_child && !_consent) Padding(padding: const EdgeInsets.only(top: 8), child: Text('Tick the confirmation above first.', style: t.textTheme.bodySmall)),
+                  if (_site.note != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_site.note!, style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant))),
                 ],
               ]),
             ),
@@ -296,24 +316,24 @@ class _FeedScreenState extends State<FeedScreen> {
               NlCard(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   const SectionTitle('What should we check?'),
-                  for (final k in _kinds)
+                  for (final k in _site.modes)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(16),
-                        onTap: _running ? null : () => setState(() => _kind = k.$1),
+                        onTap: _running ? null : () => setState(() => _kind = k.id),
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: _kind == k.$1 ? t.colorScheme.primary : t.colorScheme.outlineVariant, width: _kind == k.$1 ? 2 : 1),
-                            color: _kind == k.$1 ? t.colorScheme.secondaryContainer : null,
+                            border: Border.all(color: _kind == k.id ? t.colorScheme.primary : t.colorScheme.outlineVariant, width: _kind == k.id ? 2 : 1),
+                            color: _kind == k.id ? t.colorScheme.secondaryContainer : null,
                           ),
                           child: Row(children: [
-                            Icon(k.$4, color: t.colorScheme.primary),
+                            Icon(k.icon, color: t.colorScheme.primary),
                             const SizedBox(width: 12),
-                            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(k.$2, style: const TextStyle(fontWeight: FontWeight.w800)), Text(k.$3, style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant))])),
-                            if (_kind == k.$1) Icon(Icons.check_circle, color: t.colorScheme.primary),
+                            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(k.label, style: const TextStyle(fontWeight: FontWeight.w800)), Text(k.desc, style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant))])),
+                            if (_kind == k.id) Icon(Icons.check_circle, color: t.colorScheme.primary),
                           ]),
                         ),
                       ),
@@ -328,7 +348,7 @@ class _FeedScreenState extends State<FeedScreen> {
                     onChanged: (v) => setState(() => _limit = v ?? 10),
                   ),
                   const SizedBox(height: 10),
-                  Text("This shows what Instagram serves the account, not what was actually watched. Scrolling For You counts as viewing those reels, so it can nudge that account's recommendations.", style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+                  Text(_site.code == 'yt' ? 'Home recommendations show what YouTube serves the account. Watch history is the one check that shows what the account actually watched.' : "This shows what ${_site.name} serves the account, not what was actually watched. Scrolling the feed counts as viewing those videos, so it can nudge that account's recommendations.", style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
                   const SizedBox(height: 14),
                   if (_running) ...[
                     ClipRRect(borderRadius: BorderRadius.circular(99), child: LinearProgressIndicator(value: _progress == 0 ? null : _progress, minHeight: 8)),
@@ -367,7 +387,7 @@ class _FeedScreenState extends State<FeedScreen> {
                   for (final s in _past.take(8))
                     ListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: Text(_kinds.firstWhere((k) => k.$1 == s.kind, orElse: () => _kinds.first).$2, style: const TextStyle(fontWeight: FontWeight.w700)),
+                      title: Text(siteOf(s.platform).mode(s.kind).label, style: const TextStyle(fontWeight: FontWeight.w700)),
                       subtitle: Text('${_date(s.createdAt)} · ${s.status == 'done' ? '${s.analyzed} checked' : s.status == 'running' ? 'running' : "didn't finish"}'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: s.status == 'done' ? () => _openPast(s) : null,
@@ -411,7 +431,7 @@ class _ReportCard extends StatelessWidget {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       NlCard(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          SectionTitle('${_kinds.firstWhere((k) => k.$1 == report.kind, orElse: () => _kinds.first).$2} report', subtitle: report.username == null ? null : '@${report.username}'),
+          SectionTitle('${siteOf(report.platform).name} · ${siteOf(report.platform).mode(report.kind).label} report', subtitle: report.username == null ? null : '@${report.username}'),
           Row(children: [
             Ring(fraction: report.items.isEmpty ? 0 : report.analyzed / report.items.length, center: '${report.analyzed}', sub: 'checked', size: 92),
             const SizedBox(width: 16),

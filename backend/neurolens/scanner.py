@@ -10,9 +10,9 @@ from pathlib import Path
 
 import requests
 
-from neurolens import accounts, alerts, browser, logstore, monitorstore, wellbeing
+from neurolens import accounts, alerts, browser, logstore, monitorstore, platforms, wellbeing
 
-KINDS = {"foryou": "For You reels", "explore": "Explore", "terms": "Search topics", "profile": "Account review"}
+KINDS = {"foryou": "For You", "explore": "Explore", "terms": "Search topics", "profile": "Account review", "history": "Watch history"}  # which ones a site has: platforms.py
 MAX_ITEMS = 24
 SCAN_SLOT = threading.Semaphore(1)  # one browser session at a time on this machine
 
@@ -104,13 +104,14 @@ def run(scan_id, pid, kind, params):
     from neurolens import main as app  # imported late: main imports this module's siblings
 
     store = monitorstore
+    site = platforms.name(browser.plat_of(pid))
     workdir = tempfile.mkdtemp(prefix=app.TEMP_PREFIX)
     cookiefile = str(Path(workdir) / "cookies.txt")
     items = []
     try:
         store.update_scan(scan_id, stage="Waiting for the browser", progress=0.02)
         with SCAN_SLOT:
-            store.update_scan(scan_id, stage="Opening Instagram", progress=0.05)
+            store.update_scan(scan_id, stage=f"Opening {site}", progress=0.05)
             limit = max(1, min(int(params.get("limit") or 10), MAX_ITEMS))
             uid = accounts.uid_of(pid)
             if uid:  # a signed-in user's checks count against their plan
@@ -170,7 +171,7 @@ def run(scan_id, pid, kind, params):
         if params.get("alerts"):
             alerts._emit(pid, "watch", "limit", "Monthly limit reached", "Automatic checks are paused until your plan resets or you upgrade.", None, notify=False)
     except browser.SessionExpired:
-        store.update_scan(scan_id, status="error", stage="Login needed", finished_at=time.time(), error="The Instagram session has expired. Log in again.", items=items)
+        store.update_scan(scan_id, status="error", stage="Login needed", finished_at=time.time(), error=f"The {site} session has expired. Log in again.", items=items)
         m = store.get_monitor(pid)
         if m:
             store.save_monitor(pid, status="needs_login", status_at=time.time(), connected_at=None)

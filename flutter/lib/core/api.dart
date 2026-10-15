@@ -179,14 +179,15 @@ class ApiClient {
   // ---------------- feed checks, monitoring, alerts (each person only ever sees their own) ----------------
   Future<dynamic> owner(String method, String path, {Object? body}) => _send(method, path, body: body);
 
-  Future<Map<String, dynamic>> session(String pid) async => ((await owner('GET', 'api/sessions/$pid')) as Map).cast<String, dynamic>();
-  Future<void> startLogin(String pid) => owner('POST', 'api/sessions/$pid/login');
-  Future<void> cancelLogin(String pid) => owner('POST', 'api/sessions/$pid/login/cancel');
-  Future<void> markConnected(String pid) => owner('POST', 'api/sessions/$pid/connected');
-  /// Hands the server the Instagram session the phone just signed in to.
-  Future<void> importSession(String pid, List<Map<String, dynamic>> cookies) => owner('POST', 'api/sessions/$pid/import', body: {'cookies': cookies});
-  Future<void> disconnect(String pid) => owner('DELETE', 'api/sessions/$pid');
-  Future<String> viewToken(String pid) async => ((await owner('POST', 'api/sessions/$pid/view-token')) as Map)['token'] as String;
+  // `platform` is the site: ig (Instagram, the default), yt, tt or fb.
+  Future<Map<String, dynamic>> session(String pid, {String platform = 'ig'}) async => ((await owner('GET', 'api/sessions/$pid?platform=$platform')) as Map).cast<String, dynamic>();
+  Future<void> startLogin(String pid, {String platform = 'ig'}) => owner('POST', 'api/sessions/$pid/login?platform=$platform');
+  Future<void> cancelLogin(String pid, {String platform = 'ig'}) => owner('POST', 'api/sessions/$pid/login/cancel?platform=$platform');
+  Future<void> markConnected(String pid, {String platform = 'ig'}) => owner('POST', 'api/sessions/$pid/connected?platform=$platform');
+  /// Hands the server the session the phone just signed in to.
+  Future<void> importSession(String pid, List<Map<String, dynamic>> cookies, {String platform = 'ig'}) => owner('POST', 'api/sessions/$pid/import', body: {'cookies': cookies, 'platform': platform});
+  Future<void> disconnect(String pid, {String platform = 'ig'}) => owner('DELETE', 'api/sessions/$pid?platform=$platform');
+  Future<String> viewToken(String pid, {String platform = 'ig'}) async => ((await owner('POST', 'api/sessions/$pid/view-token?platform=$platform')) as Map)['token'] as String;
 
   /// WebSocket address of the streamed private browser.
   Uri viewSocket(String pid, String token) {
@@ -196,14 +197,14 @@ class ApiClient {
 
   Future<List<MonitorSettings>> monitors() async => ((await owner('GET', 'api/monitors')) as List).whereType<Map>().map((m) => MonitorSettings.fromJson(m.cast<String, dynamic>())).toList();
 
-  Future<MonitorSettings> saveMonitor(String pid, {required String name, required bool enabled, required int intervalMin, required bool consent}) async =>
-      MonitorSettings.fromJson(((await owner('PUT', 'api/monitors/$pid', body: {'name': name, 'enabled': enabled, 'interval_min': intervalMin, 'consent': consent})) as Map).cast<String, dynamic>());
+  Future<MonitorSettings> saveMonitor(String pid, {required String name, required bool enabled, required int intervalMin, required bool consent, String platform = 'ig'}) async =>
+      MonitorSettings.fromJson(((await owner('PUT', 'api/monitors/$pid', body: {'name': name, 'enabled': enabled, 'interval_min': intervalMin, 'consent': consent, 'platform': platform})) as Map).cast<String, dynamic>());
 
-  Future<String> startScan(String pid, String kind, {List<String> terms = const [], int limit = 10}) async =>
-      ((await owner('POST', 'api/scans', body: {'profile': pid, 'kind': kind, 'terms': terms, 'limit': limit})) as Map)['id'] as String;
+  Future<String> startScan(String pid, String kind, {List<String> terms = const [], int limit = 10, String platform = 'ig'}) async =>
+      ((await owner('POST', 'api/scans', body: {'profile': pid, 'kind': kind, 'terms': terms, 'limit': limit, 'platform': platform})) as Map)['id'] as String;
 
   Future<ScanReport> scan(String id) async => ScanReport.fromJson(((await owner('GET', 'api/scans/$id')) as Map).cast<String, dynamic>());
-  Future<List<ScanReport>> scans(String pid) async => ((await owner('GET', 'api/scans?profile=$pid')) as List).whereType<Map>().map((m) => ScanReport.fromJson(m.cast<String, dynamic>())).toList();
+  Future<List<ScanReport>> scans(String pid, {String? platform}) async => ((await owner('GET', 'api/scans?profile=$pid${platform != null ? '&platform=$platform' : ''}')) as List).whereType<Map>().map((m) => ScanReport.fromJson(m.cast<String, dynamic>())).toList();
 
   Future<({List<AlertItem> alerts, int unread})> alerts({String? profile, int limit = 50}) async {
     final j = await owner('GET', 'api/alerts?limit=$limit${profile != null ? '&profile=$profile' : ''}') as Map;

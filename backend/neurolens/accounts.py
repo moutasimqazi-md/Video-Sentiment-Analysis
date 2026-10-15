@@ -16,7 +16,7 @@ import shutil
 import threading
 import time
 
-from neurolens import browser, logstore, monitorstore
+from neurolens import browser, logstore, monitorstore, platforms
 
 PLANS = {
     "free": {
@@ -241,9 +241,19 @@ def add_usage(uid, n=1):
         )
 
 
-def children_used(uid):
+def kid_bases(uid):
+    """The user's child profiles, one entry per child however many sites are connected for them (a monitor key is `<child>` or `<child>.<site>`)."""
     prefix = f"u{uid}-"
-    return len([m for m in monitorstore.list_monitors() if m["profile_id"].startswith(prefix) and m["profile_id"] != prefix + "me"])
+    seen = []
+    for m in monitorstore.list_monitors():
+        base = platforms.split_key(m["profile_id"])[0]
+        if m["profile_id"].startswith(prefix) and base != prefix + "me" and base not in seen:
+            seen.append(base)
+    return seen
+
+
+def children_used(uid):
+    return len(kid_bases(uid))
 
 
 def resets_on():
@@ -276,10 +286,12 @@ def set_plan(uid, plan_id, cycle="monthly"):
     with logstore._lock, logstore._conn() as con:
         con.execute("UPDATE users SET plan=?, cycle=?, plan_since=? WHERE user_id=?", (plan_id, cycle, time.time(), uid))
     allowed = PLANS[plan_id]["children"]
+    keep = set(kid_bases(uid)[:allowed])
     prefix = f"u{uid}-"
-    kids = [m for m in monitorstore.list_monitors() if m["profile_id"].startswith(prefix) and m["profile_id"] != prefix + "me"]
-    for m in kids[allowed:]:  # a downgrade pauses monitoring beyond what the plan allows
-        monitorstore.save_monitor(m["profile_id"], enabled=0)
+    for m in monitorstore.list_monitors():  # a downgrade pauses monitoring beyond what the plan allows
+        base = platforms.split_key(m["profile_id"])[0]
+        if m["profile_id"].startswith(prefix) and base != prefix + "me" and base not in keep:
+            monitorstore.save_monitor(m["profile_id"], enabled=0)
 
 
 def delete_user(uid):

@@ -1,6 +1,6 @@
 """Turns scan results into notifications: saved in the alerts table (the in-app bell) and pushed to subscribed browsers."""
 
-from neurolens import accounts, monitorstore, push
+from neurolens import accounts, monitorstore, platforms, push
 
 LEVEL_RANK = {"info": 0, "watch": 1, "high": 2}
 
@@ -20,6 +20,7 @@ def _emit(pid, level, kind, title, body, link=None, job_id=None, scan_id=None, n
 def for_item(pid, scan_id, rec, assessment):
     """One alert per item that needs a look. rec = scanner item record, assessment = wellbeing.assess()."""
     who = _name(pid)
+    site = platforms.name(platforms.plat_of(pid))
     reasons, level = [], "info"
     if assessment["level"] == "high":
         level = "high"
@@ -32,9 +33,9 @@ def for_item(pid, scan_id, rec, assessment):
         reasons.append("revealing or suggestive footage")
     if not reasons:
         return None
-    what = "reel" if rec.get("kind") == "reel" else "post"
-    title = f"{'High concern' if level == 'high' else 'Worth a look'}: {who}'s feed"
-    body = f"A {rec.get('mood', 'mixed')} {what} in {who}'s feed has " + " and ".join(reasons) + "."
+    what = ("reel" if site == "Instagram" else "video") if rec.get("kind") == "reel" else "post"
+    title = f"{'High concern' if level == 'high' else 'Worth a look'}: {who}'s {site} feed"
+    body = f"A {rec.get('mood', 'mixed')} {what} in {who}'s {site} feed has " + " and ".join(reasons) + "."
     return _emit(pid, level, "item", title, body, f"pages/results.html?id={rec['jobId']}", rec["jobId"], scan_id)
 
 
@@ -42,11 +43,19 @@ def digest(pid, scan_id, summary):
     if not summary.get("analyzed"):
         return
     who = _name(pid)
+    site = platforms.name(platforms.plat_of(pid))
     flagged = len(summary.get("flagged") or [])
     body = " ".join(summary.get("lines") or [])[:300]
-    _emit(pid, "watch" if flagged else "info", "digest", f"Feed check for {who}: {summary['analyzed']} checked" + (f", {flagged} worth a look" if flagged else ""),
-          body, f"pages/feed.html?profile={pid}&scan={scan_id}", None, scan_id, notify=False)  # the per-item alerts already pushed
+    _emit(pid, "watch" if flagged else "info", "digest", f"{site} feed check for {who}: {summary['analyzed']} checked" + (f", {flagged} worth a look" if flagged else ""),
+          body, f"pages/feed.html?{_where(pid)}&scan={scan_id}", None, scan_id, notify=False)  # the per-item alerts already pushed
+
+
+def _where(pid):
+    """The profile and site part of a link into the feed page."""
+    base, code = platforms.split_key(pid)
+    return f"profile={base}&platform={code}"
 
 
 def needs_login(pid):
-    _emit(pid, "watch", "login", f"Reconnect Instagram for {_name(pid)}", "The saved Instagram session expired, so automatic checks are paused. Log in again to resume.", f"pages/feed.html?profile={pid}")
+    site = platforms.name(platforms.plat_of(pid))
+    _emit(pid, "watch", "login", f"Reconnect {site} for {_name(pid)}", f"The saved {site} session expired, so automatic checks are paused. Log in again to resume.", f"pages/feed.html?{_where(pid)}")

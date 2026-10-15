@@ -1,8 +1,9 @@
 """An isolated browser you use inside the NeuroLens page (no window opens on the computer).
 
 A headless Chrome with its own private profile is streamed to the page as JPEG frames over a WebSocket, and the page sends
-clicks, scrolling and typing back. You sign in to Instagram directly inside it: NeuroLens never sees the password, it only
-notices that the browser now holds a logged-in session, then closes the browser and keeps that session folder.
+clicks, scrolling and typing back. You sign in to Instagram, YouTube, TikTok or Facebook directly inside it: NeuroLens never sees
+the password, it only notices that the browser now holds a logged-in session, then closes the browser and keeps that session folder.
+Every live browser is for one session key (see platforms.py): a person and a site.
 
 Same idea as the isolated-browser step in savv-mvp, but streamed with Chrome's own screencast instead of VNC, so it needs
 nothing extra on Windows."""
@@ -16,26 +17,19 @@ import threading
 import time
 from urllib.parse import urlparse
 
-from neurolens import browser
+from neurolens import browser, platforms
 
 VIEW_W, VIEW_H, SCALE = 440, 780, 1.5
-# Sign-in runs in a real (not headless) Chrome placed off-screen: Instagram's checks trust that far more than headless Chrome.
+# Sign-in runs in a real (not headless) Chrome placed off-screen: the sites' bot checks trust that far more than headless Chrome.
 # Tests set NL_LIVE_HEADLESS=1 so no window is created.
 HEADLESS = os.environ.get("NL_LIVE_HEADLESS") == "1"
-PENDING_CHECK = ("/challenge", "/accounts/login", "two_factor", "checkpoint", "/accounts/suspended")
+SECURITY_STEP = ("/challenge", "checkpoint", "two_factor", "two_step", "captcha", "/verify", "signin/challenge")  # the site wants a human check
 LIVE_MINUTES = 12
-ALLOWED_SUFFIXES = ("instagram.com", "facebook.com", "fbcdn.net", "cdninstagram.com", "meta.com", "fb.com")
 VIEW_TOKEN_TTL = 60
 
-_live = {}  # pid -> Live
-_tokens = {}  # view token -> (pid, expiry)
+_live = {}  # session key -> Live
+_tokens = {}  # view token -> (session key, expiry)
 _glock = threading.Lock()
-
-
-def _host_ok(url):
-    host = (urlparse(url).hostname or "").lower()
-    base_host = (urlparse(browser.BASE).hostname or "").lower()
-    return not host or host in ("about", "") or host == base_host or host.endswith(ALLOWED_SUFFIXES) or url.startswith("about:")
 
 
 class Live:
@@ -89,13 +83,15 @@ class Live:
             self.set_state("error", "The browser for this account is busy. Try again in a moment.")
             return
         ok = False
+        code = browser.plat_of(self.pid)
+        site = platforms.name(code)
         try:
             with sync_playwright() as p:
                 if browser.connected_at(self.pid) is None:  # never reuse a half-finished or flagged attempt
                     shutil.rmtree(browser._dir(self.pid) / "chrome", ignore_errors=True)
                 ctx = browser.launch(p, self.pid, HEADLESS, {"width": VIEW_W, "height": VIEW_H}, SCALE)
                 page = ctx.pages[0] if ctx.pages else ctx.new_page()
-                page.goto(f"{browser.BASE}/accounts/login/", wait_until="domcontentloaded")
+                page.goto(platforms.login_url(code), wait_until="domcontentloaded")
                 cdp = ctx.new_cdp_session(page)
                 acks = []
 
@@ -141,13 +137,13 @@ class Live:
                             break
                         if page.url != self.url:
                             self.url = page.url
-                            if not _host_ok(self.url):
-                                page.goto(f"{browser.BASE}/accounts/login/", wait_until="domcontentloaded")
+                            if not platforms.host_ok(code, self.url):
+                                page.goto(platforms.login_url(code), wait_until="domcontentloaded")
                             self.publish("url", {"host": urlparse(self.url).hostname or ""})
-                            asking = any(k in self.url for k in ("/challenge", "checkpoint", "two_factor"))
-                            self.publish("hint", {"text": "Instagram is asking for a security check. Complete it in the browser above, slowly, like on your phone." if asking else ""})
+                            asking = any(k in self.url for k in SECURITY_STEP)
+                            self.publish("hint", {"text": f"{site} is asking for a security check. Complete it in the browser above, slowly, like on your phone." if asking else ""})
                         # signed in only when the session exists AND no security step is still pending
-                        if browser._has_session(ctx) and not any(k in self.url for k in PENDING_CHECK):
+                        if browser._has_session(ctx, code) and not platforms.is_pending_url(code, self.url):
                             settled += 1
                             if settled >= 2:
                                 ok = True

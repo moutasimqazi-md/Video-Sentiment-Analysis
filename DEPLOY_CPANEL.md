@@ -8,9 +8,9 @@ The backend is a FastAPI app that also serves the website (`frontend/`), so one 
 |---|---|---|
 | Website, accounts, plans, upload and link analysis, results, history | Works | Works |
 | Models (CLIP, CLAP, safety classifier) | Works, **needs about 2 GB of RAM** | Works |
-| Instagram sign-in, feed scans, monitoring and alerts | **Switched off** (clean 503) | Works (needs Playwright's browser and a WebSocket proxy) |
+| Feed check (sign-in, scans, child monitoring and alerts) for **Instagram, YouTube, TikTok and Facebook** | **Switched off** (clean 503, for all four) | Works (needs Playwright, Google Chrome and a WebSocket proxy) |
 
-Why the Instagram features are off on cPanel: they drive a real Chromium browser and stream it to the page over a WebSocket. Passenger speaks only WSGI, which has no WebSockets, and shared hosting has no Chromium. The routes answer `503 Instagram checks aren't available on this server.` instead of failing halfway.
+Why the Feed check is off on cPanel: they drive a real Chromium browser and stream it to the page over a WebSocket. Passenger speaks only WSGI, which has no WebSockets, and shared hosting has no Chromium. The routes answer `503 Feed check isn't available on this server.` instead of failing halfway.
 
 **Check your plan before starting.** With the models loaded the app measured **1.77 GB** of memory, and the models download **about 1.6 GB**. Many shared plans cap a process at 1 GB, and the process is killed when it goes over. You want about 2.5 GB of RAM for the app and 4 GB of free disk (packages about 1.5 GB, models 1.6 GB). If RAM is tight, set `NL_WARMUP=0` (models load on the first analysis instead of at start), but the peak is the same, so the cap still has to fit it. Ask your host for the per-process memory limit if unsure.
 

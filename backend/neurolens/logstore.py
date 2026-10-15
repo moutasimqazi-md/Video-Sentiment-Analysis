@@ -67,7 +67,9 @@ def url_key(url):
     m = re.search(r"facebook\.com/(?:watch/?\?(?:[^#]*&)?v=|reel/|reels/|[^/?#]+/videos/(?:[^/?#]+/)?)(\d{6,})", url)
     if m:
         return "fb:" + m.group(1)
-    return re.sub(r"[?#].*$", "", url.strip().lower()).rstrip("/")
+    plain = re.sub(r"[?#].*$", "", url.strip().lower()).rstrip("/")
+    v = re.search(r"[?&]v=([^&#]+)", url)
+    return plain + ("?v=" + v.group(1).lower() if v and plain.endswith("/watch") else "")  # on a watch page, ?v= is which video it is
 
 
 def _add_columns(con):

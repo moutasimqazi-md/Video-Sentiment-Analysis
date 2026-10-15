@@ -6,7 +6,7 @@ NL.browserView = (() => {
   const VIEW_W = 440, VIEW_H = 780; // the remote page's logical size (must match backend/neurolens/live.py)
   const $ = (id) => document.getElementById(id);
   const SPECIAL = new Set(["Backspace", "Enter", "Tab", "Escape", "Delete", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"]);
-  let ws = null, closing = false, attempts = 0, handlers = {}, pid = null, lastMove = 0, drag = null;
+  let ws = null, closing = false, attempts = 0, handlers = {}, pid = null, platform = "ig", defaultHost = "instagram.com", lastMove = 0, drag = null;
 
   const canvas = () => $("rbCanvas");
   function wsUrl(token) {
@@ -34,7 +34,7 @@ NL.browserView = (() => {
 
   async function connect() {
     let token;
-    try { token = (await NL.owner.call("POST", `api/sessions/${pid}/view-token`)).token; }
+    try { token = (await NL.owner.call("POST", `api/sessions/${pid}/view-token?platform=${platform}`)).token; }
     catch (e) { return handlers.onState && handlers.onState({ state: "error", error: e.message }); }
     ws = new WebSocket(wsUrl(token));
     ws.binaryType = "blob";
@@ -42,7 +42,7 @@ NL.browserView = (() => {
     ws.onmessage = (ev) => {
       if (typeof ev.data !== "string") return draw(ev.data);
       const m = JSON.parse(ev.data);
-      if (m.type === "url") { $("rbHost").textContent = m.host || "instagram.com"; handlers.onHost && handlers.onHost(m.host); }
+      if (m.type === "url") { $("rbHost").textContent = m.host || defaultHost; handlers.onHost && handlers.onHost(m.host); }
       if (m.type === "hint" && $("rbHint")) { $("rbHint").textContent = m.text || ""; $("rbHint").hidden = !m.text; }
       if (m.type === "state") {
         const o = $("rbOverlayText");
@@ -107,8 +107,9 @@ NL.browserView = (() => {
   /** Show the viewer for a profile; resolves once the socket is requested. handlers: onState({state,error}), onHost(host) */
   function open(profileId, h) {
     pid = profileId; handlers = h || {}; closing = false; attempts = 0;
+    platform = handlers.platform || "ig"; defaultHost = handlers.host || "instagram.com";
     $("rbOverlay").hidden = false; $("rbOverlayText").textContent = "Starting the private browser…";
-    $("rbHost").textContent = "instagram.com";
+    $("rbHost").textContent = defaultHost;
     wire();
     return connect();
   }

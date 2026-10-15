@@ -115,3 +115,8 @@
 @media (max-width: 639px) { .fk-step { position: relative; } .fk-step:not(.now) { padding-right: 8px; } .fk-step:not(.now) > span:last-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } }
 .rb-hint { margin: 0; padding: 10px 14px; font-size: 13px; background: var(--amber-soft); color: var(--amber); border-top: 1px solid var(--border); }
 .rb-hint[hidden] { display: none; }
+
+/* which site */
+.fk-sites { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
+.site-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 8px 16px; }
+.site-chip svg { flex: none; }

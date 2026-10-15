@@ -113,6 +113,9 @@ class Identity(unittest.TestCase):
         self.assertEqual(k("https://www.instagram.com/reel/AAA/"), "ig:AAA")
         self.assertEqual(k("https://youtu.be/abcdefghijk"), "yt:abcdefghijk")
         self.assertIsNone(k(""))
+        self.assertNotEqual(k("http://x.test/yt/watch?v=aaaaaaaaaaa"), k("http://x.test/yt/watch?v=bbbbbbbbbbb"), "two watch pages are two videos")
+        self.assertEqual(k("http://x.test/yt/watch?v=aaaaaaaaaaa&t=5"), k("http://x.test/yt/watch?v=aaaaaaaaaaa"))
+        self.assertEqual(k("https://example.com/page?utm=1#top"), "https://example.com/page", "other links are still the address without query or fragment")
 
 
 class Extractors(unittest.TestCase):

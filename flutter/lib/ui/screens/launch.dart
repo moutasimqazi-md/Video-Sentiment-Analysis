@@ -165,7 +165,7 @@ class _Slide {
 const _slides = [
   _Slide(Icons.auto_awesome, '🎬', 'Know what a Reel makes people feel', 'Paste a link or pick a video or image. NeuroLens reads the visuals and sound, and tells you the mood, with the frames that shaped it.'),
   _Slide(Icons.family_restroom, '👨‍👩‍👧', 'Look after what your family watches', 'Add a child profile, review the Reels they watch, and see a weekly wellbeing summary.'),
-  _Slide(Icons.visibility_outlined, '🔒', 'Check a feed, privately', 'Sign in to Instagram inside a private browser, check what an account is being shown, and get alerts when something needs a look.'),
+  _Slide(Icons.visibility_outlined, '🔒', 'Check a feed, privately', 'Sign in to Instagram, YouTube, TikTok or Facebook inside a private browser, check what an account is being shown, and get alerts when something needs a look.'),
 ];
 
 class IntroScreen extends StatefulWidget {

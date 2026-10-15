@@ -4,7 +4,7 @@ import random
 import threading
 import time
 
-from neurolens import monitorstore, scanner
+from neurolens import monitorstore, platforms, scanner
 
 CHECK_EVERY = 60  # seconds between looks at the schedule
 MIN_INTERVAL = 30  # minutes: never check a profile more often than this
@@ -16,7 +16,7 @@ def _tick():
     for m in monitorstore.due_monitors(now):
         interval = max(MIN_INTERVAL, int(m.get("interval_min") or 120))
         monitorstore.save_monitor(m["profile_id"], next_scan=now + interval * 60 + random.uniform(0, 300))
-        scanner.start(m["profile_id"], "explore", {"limit": 8, "new_only": True, "alerts": True})
+        scanner.start(m["profile_id"], platforms.PLATFORMS[platforms.plat_of(m["profile_id"])]["monitor_mode"], {"limit": 8, "new_only": True, "alerts": True})
 
 
 def start():

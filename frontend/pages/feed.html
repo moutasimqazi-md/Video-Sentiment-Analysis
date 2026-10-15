@@ -26,7 +26,7 @@
   <header class="fk-hero">
     <div>
       <span class="badge"><i data-icon="eye" data-size="14"></i>Feed check</span>
-      <h1>See what an Instagram feed is really showing</h1>
+      <h1 id="feedTitle">See what an Instagram feed is really showing</h1>
       <p>Sign in once, privately, right here. NeuroLens looks at what the account is being served, checks each reel and post, and writes you a short report. For a child's account it can keep watching and alert you.</p>
     </div>
     <ul class="fk-points" aria-label="How it protects you">
@@ -40,12 +40,13 @@
     <div class="fk-lock-ico"><i data-icon="lock" data-size="26"></i></div>
     <div>
       <h2 class="h3">This browser isn't connected yet</h2>
-      <p>These tools can open Instagram sessions, so they only work for you. On the computer running NeuroLens there is nothing to do. On this device, open Feed check on that computer, choose <b>Use on another device</b>, and open the link it makes (single use, valid 10 minutes).</p>
+      <p>These tools can open social-media sessions, so they only work for you. On the computer running NeuroLens there is nothing to do. On this device, open Feed check on that computer, choose <b>Use on another device</b>, and open the link it makes (single use, valid 10 minutes).</p>
       <p class="err-text" id="pairErr" role="alert" hidden></p>
     </div>
   </section>
 
   <div id="feedApp" hidden>
+    <div class="fk-sites" id="siteBar" role="group" aria-label="Which site to check"></div>
     <ol class="fk-stepper" id="stepper" aria-label="Progress"></ol>
 
     <div class="fk-grid">
@@ -54,14 +55,15 @@
         <!-- sign in -->
         <section class="card fk-stage" id="stageConnect" aria-labelledby="connHead">
           <div id="connIdle">
-            <div class="fk-art" aria-hidden="true"><span class="fk-orb"></span><span class="fk-orb b"></span><i data-icon="instagram" data-size="40"></i></div>
+            <div class="fk-art" aria-hidden="true"><span class="fk-orb"></span><span class="fk-orb b"></span><span id="siteArt"><i data-icon="instagram" data-size="40"></i></span></div>
             <h2 class="h3" id="connHead">Sign in to Instagram, privately</h2>
             <p class="muted" id="sessHelp"></p>
             <ul class="fk-ticks">
               <li><i data-icon="check" data-size="16"></i>A private browser opens in this page, not in a new window or tab.</li>
-              <li><i data-icon="check" data-size="16"></i>You type your login straight into Instagram. We never see it.</li>
+              <li><i data-icon="check" data-size="16"></i>You type your login straight into <span data-site-name>Instagram</span>. We never see it.</li>
               <li><i data-icon="check" data-size="16"></i>It closes by itself once you're in. Disconnect any time to delete the session.</li>
             </ul>
+            <p class="muted note" id="siteNote" hidden></p>
             <button class="btn primary lg" id="loginBtn"><i data-icon="instagram" data-size="18"></i>Open private browser</button>
             <p class="status-line" id="loginStatus" role="status" aria-live="polite"></p>
           </div>
@@ -74,33 +76,27 @@
               <button class="btn sm ghost" id="rbCancel" type="button">Cancel</button>
             </div>
             <div class="rb-screen" id="rbScreen">
-              <canvas id="rbCanvas" tabindex="0" aria-label="Private browser showing Instagram. Click and type here to sign in."></canvas>
+              <canvas id="rbCanvas" tabindex="0" aria-label="Private browser showing the site. Click and type here to sign in."></canvas>
               <div class="rb-overlay" id="rbOverlay" role="status" aria-live="polite"><div class="spinner"></div><span id="rbOverlayText">Starting the private browser…</span></div>
             </div>
             <p class="rb-hint" id="rbHint" role="status" hidden></p>
             <textarea class="rb-keys" id="rbKeys" aria-label="Keyboard input for the private browser" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
-            <p class="rb-note"><i data-icon="lock" data-size="14"></i>Type your username and password in the browser above. They go straight to Instagram, and NeuroLens never sees them.</p>
+            <p class="rb-note"><i data-icon="lock" data-size="14"></i>Type your username and password in the browser above. They go straight to <span data-site-name>Instagram</span>, and NeuroLens never sees them.</p>
           </div>
         </section>
 
         <!-- run a check -->
         <section class="card fk-stage" id="scanCard" aria-labelledby="scanHead" hidden>
           <div class="fk-conn">
-            <span class="fk-conn-ok"><span class="dot on" aria-hidden="true"></span><b id="sessText">Instagram connected</b></span>
+            <span class="fk-conn-ok"><span class="dot on" aria-hidden="true"></span><b id="sessText">Connected</b></span>
             <button class="btn sm ghost" id="logoutBtn" type="button">Disconnect</button>
           </div>
           <h2 class="h3" id="scanHead">What should we check?</h2>
-          <fieldset class="kinds">
-            <legend class="sr-only">What to check</legend>
-            <label class="kind"><input type="radio" name="kind" value="explore" checked><span class="kind-ico"><i data-icon="compass" data-size="20"></i></span><span><b>Explore</b><small>What Instagram suggests to this account</small></span></label>
-            <label class="kind"><input type="radio" name="kind" value="foryou"><span class="kind-ico"><i data-icon="film" data-size="20"></i></span><span><b>For You reels</b><small>The reels feed, scrolled a few times</small></span></label>
-            <label class="kind"><input type="radio" name="kind" value="terms"><span class="kind-ico"><i data-icon="search" data-size="20"></i></span><span><b>Search topics</b><small>Top posts for topics you enter</small></span></label>
-            <label class="kind"><input type="radio" name="kind" value="profile"><span class="kind-ico"><i data-icon="chart" data-size="20"></i></span><span><b>Account review</b><small>How the account's own posts come across</small></span></label>
-          </fieldset>
+          <fieldset class="kinds" id="kinds"><legend class="sr-only">What to check</legend></fieldset>
           <div class="field" id="termsRow" hidden><label for="termsIn">Topics (comma separated, up to 5)</label><input class="input" id="termsIn" placeholder="fitness, cooking, travel"></div>
           <div class="field"><label for="limitSel">How many items</label>
             <select class="input" id="limitSel"><option value="6">6 (quick)</option><option value="10" selected>10</option><option value="16">16</option><option value="24">24</option></select></div>
-          <p class="muted note">This shows what Instagram <b>serves</b> the account, not what was actually watched. Scrolling For You counts as viewing those reels, so it can nudge that account's recommendations.</p>
+          <p class="muted note" id="servedNote"></p>
           <p class="err-text" id="scanErr" role="alert" hidden></p>
           <button class="btn primary lg" id="scanBtn">Run check<i data-icon="arrow" data-size="18"></i></button>
           <div class="run-state" id="scanRun">
@@ -132,7 +128,7 @@
           <h2 class="h-card" id="whoHead">Whose account?</h2>
           <div class="field" style="margin:10px 0 0"><label class="sr-only" for="whoSel">Account</label><select class="input" id="whoSel"></select></div>
           <div id="childBox" class="child-box" hidden>
-            <label class="check"><input type="checkbox" id="consentBox"> <span><b id="consentName">My child</b> knows I check what their Instagram shows. I'll talk with them about it.</span></label>
+            <label class="check"><input type="checkbox" id="consentBox"> <span><b id="consentName">My child</b> knows I check what their <span data-site-name>Instagram</span> shows. I'll talk with them about it.</span></label>
             <label class="check"><input type="checkbox" id="monOn"> <span>Check automatically and alert me</span></label>
             <div class="field"><label for="monEvery">How often</label>
               <select class="input" id="monEvery"><option value="30">Every 30 minutes</option><option value="60">Every hour</option><option value="120" selected>Every 2 hours</option><option value="360">Every 6 hours</option><option value="1440">Once a day</option></select></div>

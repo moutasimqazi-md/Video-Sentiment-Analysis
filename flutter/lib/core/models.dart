@@ -160,8 +160,8 @@ class Job {
 }
 
 class AlertItem {
-  AlertItem({required this.id, required this.profile, required this.createdAt, required this.level, required this.kind, required this.title, required this.body, this.link, this.jobId, required this.seen});
-  final String id, profile, level, kind, title, body;
+  AlertItem({required this.id, required this.profile, required this.createdAt, required this.level, required this.kind, required this.title, required this.body, this.link, this.jobId, required this.seen, this.platform = 'ig'});
+  final String id, profile, level, kind, title, body, platform;
   final double createdAt;
   final String? link, jobId;
   final bool seen;
@@ -177,6 +177,7 @@ class AlertItem {
         link: j['link'] as String?,
         jobId: j['jobId'] as String?,
         seen: j['seen'] == true,
+        platform: j['platform'] as String? ?? 'ig',
       );
 }
 
@@ -200,8 +201,8 @@ class ScanItem {
 }
 
 class ScanReport {
-  ScanReport({required this.id, required this.profile, required this.kind, required this.createdAt, this.finishedAt, required this.status, required this.stage, required this.progress, this.error, required this.items, required this.summary});
-  final String id, profile, kind, status, stage;
+  ScanReport({required this.id, required this.profile, required this.kind, required this.createdAt, this.finishedAt, required this.status, required this.stage, required this.progress, this.error, required this.items, required this.summary, this.platform = 'ig'});
+  final String id, profile, kind, status, stage, platform;
   final double createdAt, progress;
   final double? finishedAt;
   final String? error;
@@ -221,6 +222,7 @@ class ScanReport {
     return ScanReport(
       id: j['id'] as String,
       profile: j['profile'] as String? ?? 'me',
+      platform: j['platform'] as String? ?? 'ig',
       kind: j['kind'] as String? ?? 'explore',
       createdAt: (j['createdAt'] as num?)?.toDouble() ?? 0,
       finishedAt: (j['finishedAt'] as num?)?.toDouble(),
@@ -235,8 +237,8 @@ class ScanReport {
 }
 
 class MonitorSettings {
-  MonitorSettings({required this.profileId, required this.enabled, required this.intervalMin, required this.consent, required this.connected, this.lastScan, this.status});
-  final String profileId;
+  MonitorSettings({required this.profileId, required this.enabled, required this.intervalMin, required this.consent, required this.connected, this.lastScan, this.status, this.platform = 'ig'});
+  final String profileId, platform;
   final bool enabled, consent, connected;
   final int intervalMin;
   final double? lastScan;
@@ -244,6 +246,7 @@ class MonitorSettings {
 
   factory MonitorSettings.fromJson(Map<String, dynamic> j) => MonitorSettings(
         profileId: j['profile_id'] as String,
+        platform: j['platform'] as String? ?? 'ig',
         enabled: (j['enabled'] as num?) == 1 || j['enabled'] == true,
         intervalMin: (j['interval_min'] as num?)?.toInt() ?? 120,
         consent: j['consent'] == true,

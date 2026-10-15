@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../../core/api.dart';
+import '../../core/platforms.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 
@@ -16,16 +17,16 @@ const double kViewW = 440, kViewH = 780;
 
 typedef SocketConnector = WebSocketChannel Function(Uri uri);
 
-/// Drives the private Instagram browser that the server streams as pictures. Nothing here ever sees the password: taps and
-/// key presses go to the server's isolated browser, which sends Instagram the login.
+/// Drives the private browser (Instagram, YouTube, TikTok or Facebook) that the server streams as pictures. Nothing here ever sees the
+/// password: taps and key presses go to the server's isolated browser, which sends the site the login.
 class PrivateBrowserController extends ChangeNotifier {
-  PrivateBrowserController({required this.api, required this.profileId, SocketConnector? connector}) : _connector = connector ?? WebSocketChannel.connect;
+  PrivateBrowserController({required this.api, required this.profileId, this.platform = 'ig', SocketConnector? connector}) : _connector = connector ?? WebSocketChannel.connect, host = '${siteOf(platform).name.toLowerCase()}.com';
   final ApiClient api;
-  final String profileId;
+  final String profileId, platform;
   final SocketConnector _connector;
 
   Uint8List? frame;
-  String host = 'instagram.com';
+  String host;
   String? hint;
   String state = 'starting'; // starting | live | finishing | connected | closed | error
   String? error;
@@ -39,7 +40,7 @@ class PrivateBrowserController extends ChangeNotifier {
 
   Future<void> start() async {
     try {
-      await api.startLogin(profileId);
+      await api.startLogin(profileId, platform: platform);
       await _connect();
     } on ApiException catch (e) {
       _fail(e.message);
@@ -48,7 +49,7 @@ class PrivateBrowserController extends ChangeNotifier {
 
   Future<void> _connect() async {
     try {
-      final token = await api.viewToken(profileId);
+      final token = await api.viewToken(profileId, platform: platform);
       _ch = _connector(api.viewSocket(profileId, token));
       _sub = _ch!.stream.listen(_onMessage, onError: (_) => _dropped(), onDone: _dropped);
     } on ApiException catch (e) {
@@ -116,7 +117,7 @@ class PrivateBrowserController extends ChangeNotifier {
   Future<void> cancel() async {
     _closing = true;
     try {
-      await api.cancelLogin(profileId);
+      await api.cancelLogin(profileId, platform: platform);
     } catch (_) {}
     await _teardown();
   }
@@ -136,10 +137,10 @@ class PrivateBrowserController extends ChangeNotifier {
   }
 }
 
-/// Full-screen sign-in. Pops with `true` once Instagram is connected.
+/// Full-screen sign-in. Pops with `true` once the site is connected.
 class PrivateBrowserScreen extends StatefulWidget {
-  const PrivateBrowserScreen({super.key, required this.profileId, this.connector});
-  final String profileId;
+  const PrivateBrowserScreen({super.key, required this.profileId, this.platform = 'ig', this.connector});
+  final String profileId, platform;
   final SocketConnector? connector;
 
   @override
@@ -156,7 +157,7 @@ class _PrivateBrowserScreenState extends State<PrivateBrowserScreen> {
   @override
   void initState() {
     super.initState();
-    _c = PrivateBrowserController(api: context.read<ApiClient>(), profileId: widget.profileId, connector: widget.connector)..addListener(_onChange);
+    _c = PrivateBrowserController(api: context.read<ApiClient>(), profileId: widget.profileId, platform: widget.platform, connector: widget.connector)..addListener(_onChange);
     _c.start();
   }
 
@@ -164,7 +165,7 @@ class _PrivateBrowserScreenState extends State<PrivateBrowserScreen> {
     if (_c.state == 'connected' && !_popped) {
       _popped = true;
       try {
-        await context.read<ApiClient>().markConnected(widget.profileId);
+        await context.read<ApiClient>().markConnected(widget.profileId, platform: widget.platform);
       } catch (_) {}
       if (mounted) Navigator.of(context).pop(true);
     }
@@ -203,7 +204,7 @@ class _PrivateBrowserScreenState extends State<PrivateBrowserScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Sign in to Instagram'),
+          title: Text('Sign in to ${siteOf(widget.platform).name}'),
           actions: [
             IconButton(tooltip: 'Show keyboard', icon: const Icon(Icons.keyboard_outlined), onPressed: () {
               _focus.requestFocus();
@@ -301,7 +302,7 @@ class _PrivateBrowserScreenState extends State<PrivateBrowserScreen> {
               child: Row(children: [
                 const Icon(Icons.lock_outline, size: 16, color: NlColors.green),
                 const SizedBox(width: 8),
-                Expanded(child: Text('Type your username and password in the browser above. They go straight to Instagram, and NeuroLens never sees them. Tap the keyboard button to type.', style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant))),
+                Expanded(child: Text('Type your username and password in the browser above. They go straight to ${siteOf(widget.platform).name}, and NeuroLens never sees them. Tap the keyboard button to type.', style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant))),
               ]),
             ),
           ]),

@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from neurolens import accounts, accounts_api, analyzer, browser, calibration, downloader, feed_api, guard, logstore, monitor, monitorstore
+from neurolens import accounts, accounts_api, analyzer, browser, calibration, downloader, feed_api, guard, logstore, monitor, monitorstore, platforms
 from neurolens.analyzer import analyze_video
 
 FRONTEND_DIR = Path(os.environ.get("NL_FRONTEND_DIR") or Path(__file__).resolve().parents[2] / "frontend")
@@ -254,13 +254,14 @@ def analyze_link(req: LinkRequest, request: Request):
     except downloader.LinkError as e:
         raise HTTPException(400, str(e))
     cookiefile = None
-    if "instagram.com" in url.lower():
-        # Instagram refuses anonymous downloads for most reels, so use this person's own connected account when they have one
+    code = {"instagram": "ig", "youtube": "yt", "tiktok": "tt", "facebook": "fb"}.get(downloader.platform_of(url))
+    if code:
+        # These sites refuse anonymous downloads for many videos, so use this person's own connected account for that site when they have one
         try:
             who = guard.actor(request)
             fd, tmp = tempfile.mkstemp(prefix=TEMP_PREFIX, suffix=".txt")
             os.close(fd)
-            if browser.session_cookies_to(who.ns("me"), tmp):
+            if browser.session_cookies_to(platforms.session_key(who.ns("me"), code), tmp):
                 cookiefile = tmp
             else:
                 Path(tmp).unlink(missing_ok=True)
