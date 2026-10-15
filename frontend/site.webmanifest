@@ -1,7 +1,7 @@
 {
   "name": "NeuroLens",
   "short_name": "NeuroLens",
-  "description": "Emotion analysis for Instagram Reels.",
+  "description": "Emotion analysis for Instagram, YouTube, TikTok and Facebook videos.",
   "start_url": "/pages/dashboard.html",
   "display": "standalone",
   "background_color": "#fcfaf8",
