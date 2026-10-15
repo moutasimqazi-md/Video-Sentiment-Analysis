@@ -10,7 +10,7 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, Request, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 
 from neurolens import accounts, accounts_api, analyzer, browser, calibration, downloader, feed_api, guard, logstore, monitor, monitorstore, platforms
@@ -338,6 +338,18 @@ def model_info():
 
 app.include_router(feed_api.router)
 app.include_router(accounts_api.router)
+
+
+@app.get("/", include_in_schema=False)
+@app.get("/index.html", include_in_schema=False)
+def home_page(request: Request):
+    """The home page, with the link-preview image pointed at whichever address it is being served from (link previews need an absolute URL)."""
+    html = (FRONTEND_DIR / "index.html").read_text(encoding="utf-8")
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or ""
+    proto = (request.headers.get("x-forwarded-proto") or request.url.scheme).split(",")[0].strip()
+    if host and re.fullmatch(r"[A-Za-z0-9.\-:]+", host.split(",")[0].strip()):
+        html = html.replace("https://neurolens.moveneticsdigital.com/assets/", f"{proto}://{host.split(',')[0].strip()}/assets/")
+    return HTMLResponse(html)
 
 
 # Registered last so the /api routes win; serves index.html at "/" and pages/*.html, css/, js/, assets/.
