@@ -11,6 +11,32 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+# boot.log: one line per start-up stage, plus any hard crash. Passenger only says "exited prematurely"; this shows how far a start got.
+import atexit  # noqa: E402
+import faulthandler  # noqa: E402
+import time  # noqa: E402
+from os import getpid  # noqa: E402
+
+_BOOT = Path(__file__).resolve().parent / "boot.log"
+
+
+def _boot(msg):
+    try:
+        with open(_BOOT, "a", encoding="utf-8") as f:
+            f.write(f"{time.strftime('%H:%M:%S')} pid={getpid()} {msg}\n")
+    except OSError:
+        pass
+
+
+try:
+    if _BOOT.exists() and _BOOT.stat().st_size > 200_000:
+        _BOOT.write_text("", encoding="utf-8")
+    faulthandler.enable(open(_BOOT, "a"))  # a native crash (segfault, abort) leaves its stack here
+except OSError:
+    pass
+_boot(f"start python={sys.version.split()[0]} cwd={Path.cwd()} data={environ.get('NL_DATA_DIR')!r}")
+atexit.register(lambda: _boot("exit"))
+
 environ.setdefault("NL_DEPLOYED", "1")  # nobody is "on the server computer": the owner-only routes need the owner token
 
 try:
@@ -18,12 +44,15 @@ try:
 
     from neurolens.main import app, startup  # noqa: E402
 
+    _boot("imported")
     startup()
+    _boot("started")
     application = ASGIMiddleware(app)
 except Exception:  # Passenger only says "could not be started"; keep the real reason where the owner can read it
     import traceback
 
     _why = traceback.format_exc()
+    _boot("FAILED " + _why.strip().splitlines()[-1])
     try:
         (Path(__file__).resolve().parent / "startup_error.log").write_text(_why, encoding="utf-8")
     except OSError:

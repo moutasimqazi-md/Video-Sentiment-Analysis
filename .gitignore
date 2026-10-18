@@ -14,3 +14,6 @@ backend/eval/_*.npy
 
 # built deployment package
 dist/
+
+backend/boot.log
+backend/startup_error.log
